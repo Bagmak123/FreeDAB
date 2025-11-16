@@ -11,29 +11,22 @@ jobs:
     runs-on: windows-latest
 
     steps:
-      # 1. Checkout repository
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2. Install Node.js
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "18"
 
-      # 3. Install dependencies
       - name: Install dependencies
         run: npm install
 
-      # 4. Build EXE with electron-builder
       - name: Build EXE (electron-builder)
-        env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: npm run dist
 
-      # 5. Upload final installer (.exe)
       - name: Upload built EXE
         uses: actions/upload-artifact@v4
         with:
-          name: FreeDAB-Installer
+          name: FreeDAB-EXE
           path: dist/*.exe
