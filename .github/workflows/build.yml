@@ -1,56 +1,56 @@
-name: Build FreeDAB Launcher EXE
+name: Build & Publish FreeDAB Launcher
 
 on:
-  workflow_dispatch:
   push:
     branches:
       - main
+    paths:
+      - "**"
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: windows-latest
 
     steps:
-      # 1. Checkout repo
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2. Setup Node.js
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "18"
+          node-version: 18
 
-      # 3. Install dependencies
       - name: Install dependencies
         run: npm install
 
-      # 4. Build EXE + generate release artifacts
-      - name: Build with electron-builder
+      - name: Increase version automatically
+        id: versioning
+        run: |
+          node -e "
+          const fs = require('fs');
+          const pkg = JSON.parse(fs.readFileSync('package.json'));
+          const [major,minor,patch] = pkg.version.split('.').map(Number);
+          pkg.version = `${major}.${minor}.${patch+1}`;
+          fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));
+          console.log('::set-output name=version::' + pkg.version);
+          "
+        shell: bash
+
+      - name: Commit updated version
+        run: |
+          git config user.email "actions@github.com"
+          git config user.name "GitHub Actions"
+          git add package.json
+          git commit -m "Auto bump version to ${{ steps.versioning.outputs.version }}" || echo "No changes"
+
+      - name: Build installer & publish to GitHub Releases
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
-        run: npm run dist
+        run: npm run release
 
-      # 5. Upload EXE, installer, update metadata
-      - name: Upload Release Artifacts
-        uses: actions/upload-artifact@v4
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
         with:
           name: FreeDAB-Build
-          path: |
-            dist/*.exe
-            dist/*.yml
-            dist/*.zip
-
-      # 6. Auto-create GitHub Release
-      - name: Publish Release
-        uses: softprops/action-gh-release@v2
-        with:
-          token: ${{ secrets.GH_TOKEN }}
-          tag_name: v${{ steps.version.outputs.ver }}
-          name: "FreeDAB v${{ steps.version.outputs.ver }}"
-          draft: false
-          prerelease: false
-          files: |
-            dist/*.exe
-            dist/*.yml
-            dist/*.zip
+          path: dist/
