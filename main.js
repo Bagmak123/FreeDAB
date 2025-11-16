@@ -1,9 +1,29 @@
-const { app, BrowserWindow, shell, ipcMain } = require("electron");
+const { app, BrowserWindow, shell, ipcMain, dialog } = require("electron");
 const path = require("path");
 const fs = require("fs");
 const https = require("https");
 const http = require("http");
 const { autoUpdater } = require("electron-updater");
+
+/* ======================================================
+                ПУТЬ К ФАЙЛУ НАСТРОЕК
+======================================================*/
+const SETTINGS_FILE = path.join(app.getPath("userData"), "user-settings.json");
+
+function loadSettings() {
+  if (!fs.existsSync(SETTINGS_FILE)) {
+    return { downloadPath: app.getPath("downloads") };
+  }
+  try {
+    return JSON.parse(fs.readFileSync(SETTINGS_FILE, "utf-8"));
+  } catch {
+    return { downloadPath: app.getPath("downloads") };
+  }
+}
+
+function saveSettings(obj) {
+  fs.writeFileSync(SETTINGS_FILE, JSON.stringify(obj, null, 2));
+}
 
 /* ======================================================
                       СОЗДАНИЕ ОКНА
@@ -37,33 +57,26 @@ function createWindow() {
 function setupAutoUpdater(win) {
   autoUpdater.autoDownload = false;
 
-  // Передаём версию приложения в UI
   win.webContents.on("did-finish-load", () => {
     win.webContents.send("app-version", app.getVersion());
   });
 
-  // UI → показать «Проверка обновлений...»
+  // Проверка при запуске
   win.webContents.send("update-checking");
-
-  // Запускаем проверку
   autoUpdater.checkForUpdates();
 
-  // Обновление найдено
   autoUpdater.on("update-available", (info) => {
     win.webContents.send("update-available", info);
   });
 
-  // Обновлений нет
   autoUpdater.on("update-not-available", () => {
     win.webContents.send("update-not-available");
   });
 
-  // Ошибка при обновлении
   autoUpdater.on("error", (err) => {
     win.webContents.send("update-error", err.message);
   });
 
-  // Прогресс скачивания
   autoUpdater.on("download-progress", (p) => {
     win.webContents.send("update-progress", {
       percent: Math.round(p.percent),
@@ -73,20 +86,50 @@ function setupAutoUpdater(win) {
     });
   });
 
-  // Файл обновления скачан
   autoUpdater.on("update-downloaded", () => {
-    // Сообщаем UI, чтобы показать галочку и надпись "Завершено"
     win.webContents.send("update-downloaded");
-
-    // Даём 5 секунд на анимацию и затем перезапускаем с обновлением
-    setTimeout(() => {
-      autoUpdater.quitAndInstall();
-    }, 5000);
+    setTimeout(() => autoUpdater.quitAndInstall(), 5000);
   });
 
-  // Команда из UI — начать скачивание обновления
+  // Команда на скачивание
   ipcMain.on("start-update", () => {
     autoUpdater.downloadUpdate();
+  });
+
+  /* ----------- Кнопка "Проверить обновление" из настроек ----------- */
+  ipcMain.handle("update-check", async () => {
+    autoUpdater.autoDownload = false;
+    autoUpdater.checkForUpdates();
+    return true;
+  });
+
+  ipcMain.handle("update-apply", async () => {
+    autoUpdater.downloadUpdate();
+    return true;
+  });
+
+  // Отправляем статус в renderer (для настроек)
+  autoUpdater.on("update-available", info => {
+    win.webContents.send("update-status", {
+      status: "available",
+      info
+    });
+  });
+
+  autoUpdater.on("update-not-available", () => {
+    win.webContents.send("update-status", { status: "latest" });
+  });
+
+  autoUpdater.on("download-progress", p => {
+    win.webContents.send("update-status", {
+      status: "downloading",
+      percent: p.percent
+    });
+  });
+
+  autoUpdater.on("update-downloaded", () => {
+    win.webContents.send("update-status", { status: "ready" });
+    setTimeout(() => autoUpdater.quitAndInstall(), 2000);
   });
 }
 
@@ -95,7 +138,9 @@ function setupAutoUpdater(win) {
 ======================================================*/
 function downloadFile(win, url, fileName, gameId) {
   try {
-    const downloadsDir = app.getPath("downloads");
+    const settings = loadSettings();
+    const downloadsDir = settings.downloadPath || app.getPath("downloads");
+
     const filePath = path.join(downloadsDir, fileName || "game-download");
 
     const startTime = Date.now();
@@ -111,7 +156,6 @@ function downloadFile(win, url, fileName, gameId) {
       const client = currentUrl.startsWith("http://") ? http : https;
 
       const req = client.get(currentUrl, (response) => {
-        // Обработка редиректов (например, GitHub Releases)
         if (response.statusCode === 301 || response.statusCode === 302) {
           let redirectUrl = response.headers.location;
           if (!redirectUrl) {
@@ -205,10 +249,32 @@ ipcMain.on("download-game", (event, payload) => {
 });
 
 /* ======================================================
+                    НАСТРОЙКИ ПОЛЬЗОВАТЕЛЯ
+======================================================*/
+ipcMain.handle("settings-get-path", () => {
+  return loadSettings().downloadPath;
+});
+
+ipcMain.handle("settings-choose-path", async () => {
+  const res = await dialog.showOpenDialog({
+    properties: ["openDirectory"]
+  });
+
+  if (res.canceled) return null;
+  return res.filePaths[0];
+});
+
+ipcMain.handle("settings-save-path", (_e, newPath) => {
+  const s = loadSettings();
+  s.downloadPath = newPath;
+  saveSettings(s);
+  return true;
+});
+
+/* ======================================================
                       ЗАПУСК APP
 ======================================================*/
 app.whenReady().then(() => {
-  // Автозапуск лаунчера при старте Windows
   if (process.platform === "win32") {
     app.setLoginItemSettings({
       openAtLogin: true,
