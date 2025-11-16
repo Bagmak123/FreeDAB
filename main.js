@@ -23,7 +23,6 @@ function createWindow() {
 
   win.loadFile("index.html");
 
-  // Блокируем открытие ссылок внутри лаунчера
   win.webContents.setWindowOpenHandler(({ url }) => {
     shell.openExternal(url);
     return { action: "deny" };
@@ -43,24 +42,28 @@ function setupAutoUpdater(win) {
     win.webContents.send("app-version", app.getVersion());
   });
 
-  // UI → показать «Проверка обновлений...»
+  // UI → «Проверка обновлений...»
   win.webContents.send("update-checking");
 
   // Запускаем проверку
   autoUpdater.checkForUpdates();
 
+  // Обновление найдено
   autoUpdater.on("update-available", (info) => {
     win.webContents.send("update-available", info);
   });
 
+  // Обновлений нет
   autoUpdater.on("update-not-available", () => {
     win.webContents.send("update-not-available");
   });
 
+  // Ошибка
   autoUpdater.on("error", (err) => {
     win.webContents.send("update-error", err.message);
   });
 
+  // Прогресс скачивания
   autoUpdater.on("download-progress", (p) => {
     win.webContents.send("update-progress", {
       percent: Math.round(p.percent),
@@ -70,14 +73,13 @@ function setupAutoUpdater(win) {
     });
   });
 
+  // Файл скачан — устанавливаем
   autoUpdater.on("update-downloaded", () => {
     win.webContents.send("update-downloaded");
-
-    // Через секунду закрываем лаунчер и ставим обновление
-    setTimeout(() => autoUpdater.quitAndInstall(), 1200);
+    setTimeout(() => autoUpdater.quitAndInstall(), 1500);
   });
 
-  // UI: пользователь нажал кнопку «Обновить»
+  // Команда из UI — начать скачивание обновления
   ipcMain.on("start-update", () => {
     autoUpdater.downloadUpdate();
   });
@@ -104,21 +106,28 @@ function downloadFile(win, url, fileName, gameId) {
       const client = currentUrl.startsWith("http://") ? http : https;
 
       const req = client.get(currentUrl, (response) => {
-        // Редирект (GitHub Releases делает редирект!)
+        // Редиректы (GitHub Releases тоже так делает)
         if (response.statusCode === 301 || response.statusCode === 302) {
           let redirectUrl = response.headers.location;
-          if (!redirectUrl) return sendError("Пустой redirect URL");
-
-          if (!redirectUrl.startsWith("http")) {
-            redirectUrl = new URL(redirectUrl, currentUrl).toString();
+          if (!redirectUrl) {
+            sendError("Пустой redirect Location");
+            return;
           }
-
+          if (!/^https?:\/\//i.test(redirectUrl)) {
+            try {
+              redirectUrl = new URL(redirectUrl, currentUrl).toString();
+            } catch (e) {
+              sendError("Неверный redirect URL");
+              return;
+            }
+          }
           requestUrl(redirectUrl);
           return;
         }
 
         if (response.statusCode !== 200) {
-          return sendError("HTTP статус " + response.statusCode);
+          sendError("HTTP статус " + response.statusCode);
+          return;
         }
 
         const total = parseInt(response.headers["content-length"] || "0", 10);
@@ -128,11 +137,12 @@ function downloadFile(win, url, fileName, gameId) {
 
         response.on("data", (chunk) => {
           received += chunk.length;
-
-          const elapsed = (Date.now() - startTime) / 1000;
-          const speed = received / (elapsed || 1);
-
-          let percent = total > 0 ? Math.round((received / total) * 100) : null;
+          const elapsed = (Date.now() - startTime) / 1000 || 1;
+          const speed = received / elapsed;
+          let percent = null;
+          if (total > 0) {
+            percent = Math.round((received / total) * 100);
+          }
 
           win.webContents.send("download-progress", {
             gameId,
@@ -154,10 +164,14 @@ function downloadFile(win, url, fileName, gameId) {
           });
         });
 
-        file.on("error", (err) => sendError(err.message));
+        file.on("error", (err) => {
+          sendError(err.message);
+        });
       });
 
-      req.on("error", (err) => sendError(err.message));
+      req.on("error", (err) => {
+        sendError(err.message);
+      });
     }
 
     requestUrl(url);
@@ -175,14 +189,13 @@ function downloadFile(win, url, fileName, gameId) {
 ipcMain.on("download-game", (event, payload) => {
   const win = BrowserWindow.fromWebContents(event.sender);
   const { url, fileName, gameId } = payload;
-
   if (!url) {
-    return win.webContents.send("download-error", {
+    win.webContents.send("download-error", {
       gameId,
       error: "Пустая ссылка на файл"
     });
+    return;
   }
-
   downloadFile(win, url, fileName, gameId);
 });
 
@@ -190,13 +203,21 @@ ipcMain.on("download-game", (event, payload) => {
                       ЗАПУСК APP
 ======================================================*/
 app.whenReady().then(() => {
+  // Автозапуск лаунчера при старте Windows
+  if (process.platform === "win32") {
+    app.setLoginItemSettings({
+      openAtLogin: true,
+      path: process.execPath
+    });
+  }
+
   const win = createWindow();
   setupAutoUpdater(win);
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {
       const newWin = createWindow();
-      setupAutoUpdater(newWin);
+      // автообновлялка уже запущена глобально, второй раз её не трогаем
     }
   });
 });
