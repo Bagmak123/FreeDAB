@@ -577,5 +577,80 @@
       });
     }
   </script>
+  <!-- SETTINGS BUTTON -->
+<div id="settingsBtn" title="Настройки">⚙</div>
+
+<!-- SETTINGS WINDOW -->
+<div id="settingsWindow">
+  <h3>Настройки</h3>
+
+  <div class="settings-section">
+    <h4>Путь загрузки файлов</h4>
+    <div id="downloadPath"></div>
+    <button id="changeDownloadPath">Изменить путь</button>
+  </div>
+
+  <div class="settings-section">
+    <h4>Обновление лаунчера</h4>
+    <div id="updateStatus">Нажмите “Проверить обновление”</div>
+    <button id="checkUpdateBtn">Проверить обновление</button>
+    <button id="applyUpdateBtn" style="display:none;">Обновить сейчас</button>
+  </div>
+
+  <button id="closeSettings">Закрыть</button>
+</div>
+
+<style>
+#settingsBtn {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  width: 42px;
+  height: 42px;
+  background: rgba(255,255,255,0.15);
+  border-radius: 50%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size: 20px;
+  cursor:pointer;
+  backdrop-filter: blur(6px);
+  z-index: 9999;
+}
+
+#settingsWindow {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  width: 380px;
+  transform: translate(-50%, -50%);
+  background: #0d0d15;
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 16px;
+  padding: 20px;
+  display:none;
+  z-index:99999;
+}
+
+#settingsWindow h3 {
+  margin-top:0;
+  font-size:18px;
+}
+
+.settings-section {
+  margin-bottom:20px;
+  padding-bottom:15px;
+  border-bottom:1px solid rgba(255,255,255,0.1);
+}
+
+#settingsWindow button {
+  margin-top:8px;
+  padding:8px 14px;
+  border-radius:8px;
+  border:none;
+  cursor:pointer;
+  font-weight:600;
+}
+</style>
 </body>
 </html>
