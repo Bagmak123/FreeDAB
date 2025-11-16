@@ -4,8 +4,6 @@ on:
   push:
     branches:
       - main
-    paths:
-      - "**"
   workflow_dispatch:
 
 jobs:
@@ -24,18 +22,23 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Increase version automatically
+      # ----------------------------------------------------
+      # AUTO VERSION BUMP
+      # ----------------------------------------------------
+      - name: Auto-increase version
         id: versioning
-        run: |
-          node -e "
-          const fs = require('fs');
-          const pkg = JSON.parse(fs.readFileSync('package.json'));
-          const [major,minor,patch] = pkg.version.split('.').map(Number);
-          pkg.version = `${major}.${minor}.${patch+1}`;
-          fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));
-          console.log('::set-output name=version::' + pkg.version);
-          "
         shell: bash
+        run: |
+          NEW_VERSION=$(node - << 'EOF'
+          const fs = require('fs');
+          let pkg = JSON.parse(fs.readFileSync('package.json'));
+          let [maj, min, pat] = pkg.version.split('.').map(Number);
+          pkg.version = `${maj}.${min}.${pat + 1}`;
+          fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));
+          console.log(pkg.version);
+          EOF
+          )
+          echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
 
       - name: Commit updated version
         run: |
@@ -43,14 +46,21 @@ jobs:
           git config user.name "GitHub Actions"
           git add package.json
           git commit -m "Auto bump version to ${{ steps.versioning.outputs.version }}" || echo "No changes"
+          git push || true
 
-      - name: Build installer & publish to GitHub Releases
+      # ----------------------------------------------------
+      # BUILD & PUBLISH
+      # ----------------------------------------------------
+      - name: Build installer & publish
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: npm run release
 
+      # ----------------------------------------------------
+      # UPLOAD ARTIFACT (FIXED TO v4)
+      # ----------------------------------------------------
       - name: Upload artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: FreeDAB-Build
           path: dist/
