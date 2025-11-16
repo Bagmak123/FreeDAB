@@ -1,52 +1,69 @@
-const { contextBridge, ipcRenderer } = require('electron');
+const { contextBridge, ipcRenderer } = require("electron");
 
-/* -----------------------------
-      СКАЧИВАНИЕ ИГР
-------------------------------*/
-contextBridge.exposeInMainWorld('downloader', {
-  downloadGame: (payload) => ipcRenderer.send('download-game', payload),
-  onProgress: (cb) => ipcRenderer.on('download-progress', (_e, data) => cb(data)),
-  onComplete: (cb) => ipcRenderer.on('download-complete', (_e, data) => cb(data)),
-  onError: (cb) => ipcRenderer.on('download-error', (_e, data) => cb(data)),
+/* ======================================================
+                    СКАЧИВАНИЕ ИГР
+======================================================*/
+contextBridge.exposeInMainWorld("downloader", {
+  downloadGame: (payload) => ipcRenderer.send("download-game", payload),
+  onProgress: (cb) =>
+    ipcRenderer.on("download-progress", (_e, data) => cb(data)),
+  onComplete: (cb) =>
+    ipcRenderer.on("download-complete", (_e, data) => cb(data)),
+  onError: (cb) => ipcRenderer.on("download-error", (_e, data) => cb(data)),
 });
 
-/* -----------------------------
-      АВТООБНОВЛЕНИЕ
-------------------------------*/
-contextBridge.exposeInMainWorld('updater', {
-  // Проверка обновлений началась
+/* ======================================================
+                   АВТООБНОВЛЕНИЕ
+======================================================*/
+contextBridge.exposeInMainWorld("updater", {
+  /** UI → получает текущую версию */
+  onAppVersion: (cb) =>
+    ipcRenderer.on("app-version", (_e, version) => cb(version)),
+
+  /** Проверка обновлений */
   onChecking: (cb) => ipcRenderer.on("update-checking", () => cb()),
+  onAvailable: (cb) =>
+    ipcRenderer.on("update-available", (_e, info) => cb(info)),
+  onNotAvailable: (cb) =>
+    ipcRenderer.on("update-not-available", () => cb()),
+  onError: (cb) =>
+    ipcRenderer.on("update-error", (_e, err) => cb(err)),
+  onDownloadProgress: (cb) =>
+    ipcRenderer.on("update-progress", (_e, data) => cb(data)),
+  onDownloaded: (cb) =>
+    ipcRenderer.on("update-downloaded", () => cb()),
 
-  // Обновление найдено
-  onAvailable: (cb) => ipcRenderer.on("update-available", (_e, info) => cb(info)),
-
-  // Обновлений нет
-  onNotAvailable: (cb) => ipcRenderer.on("update-not-available", () => cb()),
-
-  // Ошибка обновления
-  onError: (cb) => ipcRenderer.on("update-error", (_e, err) => cb(err)),
-
-  // Прогресс скачивания обновления
-  onDownloadProgress: (cb) => ipcRenderer.on("update-progress", (_e, data) => cb(data)),
-
-  // Файл обновления скачан
-  onDownloaded: (cb) => ipcRenderer.on("update-downloaded", () => cb()),
-
-  // Команда: начать скачивание обновления
+  /** Команда начать скачивать обновление */
   startUpdate: () => ipcRenderer.send("start-update"),
+});
 
-  // Текущая версия приложения
-  onAppVersion: (cb) => ipcRenderer.on("app-version", (_e, version) => cb(version)),
-      });
+/* ======================================================
+                   ОКНО НАСТРОЕК
+======================================================*/
 
 contextBridge.exposeInMainWorld("settings", {
-  getPath: () => ipcRenderer.invoke("settings-get-path"),
-  choosePath: () => ipcRenderer.invoke("settings-choose-path"),
-  savePath: (p) => ipcRenderer.invoke("settings-save-path", p)
-});
+  /** Получить путь загрузки */
+  getDownloadPath: () => ipcRenderer.invoke("settings-get-download-path"),
 
-contextBridge.exposeInMainWorld("updates", {
-  check: () => ipcRenderer.invoke("update-check"),
-  apply: () => ipcRenderer.invoke("update-apply"),
-  onStatus: (cb) => ipcRenderer.on("update-status", (_e, data) => cb(data))
+  /** Установить новый путь */
+  setDownloadPath: (p) =>
+    ipcRenderer.invoke("settings-set-download-path", p),
+
+  /** Выбор папки через диалог */
+  chooseFolder: () => ipcRenderer.invoke("settings-choose-folder"),
+
+  /** Ручная проверка обновлений */
+  manualCheckUpdate: () => ipcRenderer.send("manual-check-update"),
+
+  /** Начать установку обновления */
+  startUpdate: () => ipcRenderer.send("start-update"),
+
+  /** Получает сигналы от main.js */
+  onChecking: (cb) => ipcRenderer.on("update-checking", () => cb()),
+  onAvailable: (cb) =>
+    ipcRenderer.on("update-available", (_e, info) => cb(info)),
+  onNotAvailable: (cb) =>
+    ipcRenderer.on("update-not-available", () => cb()),
+  onError: (cb) =>
+    ipcRenderer.on("update-error", (_e, err) => cb(err)),
 });
