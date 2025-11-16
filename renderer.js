@@ -372,3 +372,67 @@ function pluralize(n) {
       INITIAL RENDER
 ============================= */
 render(games);
+
+/* =====================
+       НАСТРОЙКИ
+===================== */
+
+const settingsBtn = document.getElementById("settingsBtn");
+const settingsWindow = document.getElementById("settingsWindow");
+const closeSettings = document.getElementById("closeSettings");
+const downloadPath = document.getElementById("downloadPath");
+const changeDownloadPath = document.getElementById("changeDownloadPath");
+
+const checkUpdateBtn = document.getElementById("checkUpdateBtn");
+const applyUpdateBtn = document.getElementById("applyUpdateBtn");
+const updateStatus = document.getElementById("updateStatus");
+
+settingsBtn.addEventListener("click", async () => {
+  settingsWindow.style.display = "block";
+
+  const path = await window.settings.getPath();
+  downloadPath.textContent = path;
+});
+
+closeSettings.addEventListener("click", () => {
+  settingsWindow.style.display = "none";
+});
+
+changeDownloadPath.addEventListener("click", async () => {
+  const p = await window.settings.choosePath();
+  if (!p) return;
+  await window.settings.savePath(p);
+  downloadPath.textContent = p;
+});
+
+/* ----- ОБНОВЛЕНИЯ ----- */
+
+checkUpdateBtn.addEventListener("click", async () => {
+  updateStatus.textContent = "Проверка...";
+  applyUpdateBtn.style.display = "none";
+  await window.updates.check();
+});
+
+window.updates.onStatus((data) => {
+  if (data.status === "latest") {
+    updateStatus.textContent = "Вы используете последнюю версию ✓";
+  }
+  if (data.status === "available") {
+    updateStatus.textContent = "Доступно обновление: v" + data.info.version;
+    applyUpdateBtn.style.display = "inline-block";
+  }
+  if (data.status === "downloading") {
+    updateStatus.textContent = "Скачивание: " + Math.round(data.percent) + "%";
+  }
+  if (data.status === "ready") {
+    updateStatus.textContent = "Готово! Перезапуск...";
+    applyUpdateBtn.style.display = "none";
+  }
+});
+
+applyUpdateBtn.addEventListener("click", () => {
+  updateStatus.textContent = "Скачивание...";
+  applyUpdateBtn.style.display = "none";
+  window.updates.apply();
+});
+
