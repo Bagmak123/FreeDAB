@@ -1,0 +1,56 @@
+name: Build FreeDAB Launcher EXE
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      # 1. Checkout repo
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. Setup Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+
+      # 3. Install dependencies
+      - name: Install dependencies
+        run: npm install
+
+      # 4. Build EXE + generate release artifacts
+      - name: Build with electron-builder
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: npm run dist
+
+      # 5. Upload EXE, installer, update metadata
+      - name: Upload Release Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: FreeDAB-Build
+          path: |
+            dist/*.exe
+            dist/*.yml
+            dist/*.zip
+
+      # 6. Auto-create GitHub Release
+      - name: Publish Release
+        uses: softprops/action-gh-release@v2
+        with:
+          token: ${{ secrets.GH_TOKEN }}
+          tag_name: v${{ steps.version.outputs.ver }}
+          name: "FreeDAB v${{ steps.version.outputs.ver }}"
+          draft: false
+          prerelease: false
+          files: |
+            dist/*.exe
+            dist/*.yml
+            dist/*.zip
