@@ -26,9 +26,10 @@ function saveSettings(obj) {
 }
 
 /* ======================================================
-                      СОЗДАНИЕ ОКНА
+                      СОЗДАНИЕ ОСНОВНОГО ОКНА
 ======================================================*/
 let mainWindow = null;
+let settingsWindow = null;
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -55,12 +56,52 @@ function createWindow() {
 }
 
 /* ======================================================
+                ОКНО НАСТРОЕК (новое окно)
+======================================================*/
+function openSettingsWindow() {
+  if (settingsWindow) {
+    settingsWindow.focus();
+    return;
+  }
+
+  settingsWindow = new BrowserWindow({
+    width: 420,
+    height: 380,
+    resizable: false,
+    title: "Настройки",
+    backgroundColor: "#111111",
+    modal: false,
+    parent: mainWindow,
+    frame: true,
+    webPreferences: {
+      preload: path.join(__dirname, "preload.js")
+    }
+  });
+
+  settingsWindow.loadFile("settingsWindow.html");
+
+  settingsWindow.on("closed", () => {
+    settingsWindow = null;
+  });
+
+  // Передаём путь загрузки сразу при загрузке
+  settingsWindow.webContents.on("did-finish-load", () => {
+    settingsWindow.webContents.send("settings-load", loadSettings());
+  });
+}
+
+/* IPC — команда открыть окно настроек */
+ipcMain.handle("open-settings", () => {
+  openSettingsWindow();
+  return true;
+});
+
+/* ======================================================
                  АВТООБНОВЛЕНИЕ LAUNCHER
 ======================================================*/
 function setupAutoUpdater() {
   autoUpdater.autoDownload = false;
 
-  // Версия для UI
   autoUpdater.on("checking-for-update", () => {
     if (mainWindow) {
       mainWindow.webContents.send("app-version", app.getVersion());
@@ -116,31 +157,27 @@ function setupAutoUpdater() {
       mainWindow.webContents.send("update-downloaded");
       mainWindow.webContents.send("update-status", { status: "ready" });
     }
-    // Даём 5 секунд на анимацию, затем перезапуск с обновлением
+
     setTimeout(() => {
       autoUpdater.quitAndInstall();
     }, 5000);
   });
 
-  // Запуск проверки при старте
   app.whenReady().then(() => {
     autoUpdater.checkForUpdates();
   });
 
-  // Из настроек: "Проверить обновление"
   ipcMain.handle("update-check", async () => {
     autoUpdater.autoDownload = false;
     autoUpdater.checkForUpdates();
     return true;
   });
 
-  // Из настроек: "Обновить сейчас"
   ipcMain.handle("update-apply", async () => {
     autoUpdater.downloadUpdate();
     return true;
   });
 
-  // Старый канал из окна обновления
   ipcMain.on("start-update", () => {
     autoUpdater.downloadUpdate();
   });
@@ -168,7 +205,6 @@ function downloadFile(win, url, fileName, gameId) {
       const client = currentUrl.startsWith("http://") ? http : https;
 
       const req = client.get(currentUrl, (response) => {
-        // Редиректы (GitHub Releases и др.)
         if (response.statusCode === 301 || response.statusCode === 302) {
           let redirectUrl = response.headers.location;
           if (!redirectUrl) {
@@ -245,9 +281,6 @@ function downloadFile(win, url, fileName, gameId) {
   }
 }
 
-/* ======================================================
-                IPC – КОМАНДА СКАЧАТЬ ИГРУ
-======================================================*/
 ipcMain.on("download-game", (event, payload) => {
   const win = BrowserWindow.fromWebContents(event.sender);
   const { url, fileName, gameId } = payload;
@@ -262,8 +295,7 @@ ipcMain.on("download-game", (event, payload) => {
 });
 
 /* ======================================================
-                    НАСТРОЙКИ ПОЛЬЗОВАТЕЛЯ
-   (путь загрузки — используется в настройках и загрузчике)
+              НАСТРОЙКИ ПОЛЬЗОВАТЕЛЯ
 ======================================================*/
 ipcMain.handle("settings-get-path", () => {
   return loadSettings().downloadPath;
@@ -286,12 +318,10 @@ ipcMain.handle("settings-save-path", (_e, newPath) => {
 });
 
 /* ======================================================
-      "ПУБЛИКАЦИЯ ОБНОВЛЕНИЯ" ИЗ АДМИН-ПАНЕЛИ
-   (откроем страницу GitHub Actions, где ты жмёшь Run)
+     КНОПКА "ОПУБЛИКОВАТЬ ОБНОВЛЕНИЕ" ИЗ АДМИНКИ
 ======================================================*/
 ipcMain.handle("open-ci-actions", () => {
-  const url = "https://github.com/Bagmak123/FreeDAB/actions";
-  shell.openExternal(url);
+  shell.openExternal("https://github.com/Bagmak123/FreeDAB/actions");
   return true;
 });
 
@@ -299,21 +329,11 @@ ipcMain.handle("open-ci-actions", () => {
                       ЗАПУСК APP
 ======================================================*/
 app.whenReady().then(() => {
-  // Автозапуск лаунчера при старте Windows
-  if (process.platform === "win32") {
-    app.setLoginItemSettings({
-      openAtLogin: true,
-      path: process.execPath
-    });
-  }
-
   createWindow();
   setupAutoUpdater();
 
   app.on("activate", () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
-      createWindow();
-    }
+    if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
 });
 
