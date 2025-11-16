@@ -16,13 +16,21 @@
     "directories": {
       "output": "dist"
     },
+    "files": [
+      "**/*",
+      "!dist/**/*"
+    ],
     "win": {
       "target": "nsis"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true
     }
   },
 
-  "dependencies": {
-  },
+  "dependencies": {},
 
   "devDependencies": {
     "electron": "^29.0.0",
