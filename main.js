@@ -3,6 +3,7 @@ const path = require('path');
 const fs = require('fs');
 const https = require('https');
 const http = require('http');
+const { autoUpdater } = require('electron-updater');
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -11,7 +12,7 @@ function createWindow() {
     minWidth: 900,
     minHeight: 600,
     backgroundColor: '#111111',
-    title: 'Freetp Launcher',
+    title: 'FreeDAB Launcher',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js')
     }
@@ -23,8 +24,67 @@ function createWindow() {
     shell.openExternal(url);
     return { action: 'deny' };
   });
+
+  return win;
 }
 
+/* -----------------------------
+      СИСТЕМА АВТООБНОВЛЕНИЙ
+------------------------------*/
+function setupAutoUpdater(win) {
+  autoUpdater.autoDownload = false;
+
+  // Отправляем версию в UI
+  win.webContents.on("did-finish-load", () => {
+    win.webContents.send("app-version", app.getVersion());
+  });
+
+  // UI → "Проверяю обновления..."
+  win.webContents.send("update-checking");
+
+  // Начать проверку
+  autoUpdater.checkForUpdates();
+
+  // Обновление найдено
+  autoUpdater.on("update-available", (info) => {
+    win.webContents.send("update-available", info);
+  });
+
+  // Обновления нет
+  autoUpdater.on("update-not-available", () => {
+    win.webContents.send("update-not-available");
+  });
+
+  // Ошибка
+  autoUpdater.on("error", (err) => {
+    win.webContents.send("update-error", err.message);
+  });
+
+  // Прогресс скачивания
+  autoUpdater.on("download-progress", (p) => {
+    win.webContents.send("update-progress", {
+      percent: Math.round(p.percent),
+      transferred: p.transferred,
+      total: p.total,
+      speed: p.bytesPerSecond
+    });
+  });
+
+  // Файл скачан — устанавливаем
+  autoUpdater.on("update-downloaded", () => {
+    win.webContents.send("update-downloaded");
+    setTimeout(() => autoUpdater.quitAndInstall(), 1500);
+  });
+
+  // Команда из UI — начать скачивание
+  ipcMain.on("start-update", () => {
+    autoUpdater.downloadUpdate();
+  });
+}
+
+/* -----------------------------
+      СКАЧИВАНИЕ ИГР (ТВОЙ КОД)
+------------------------------*/
 function downloadFile(win, url, fileName, gameId) {
   try {
     const downloadsDir = app.getPath('downloads');
@@ -74,7 +134,7 @@ function downloadFile(win, url, fileName, gameId) {
         response.on('data', (chunk) => {
           received += chunk.length;
           const elapsed = (Date.now() - startTime) / 1000 || 1;
-          const speed = received / elapsed; // bytes per second
+          const speed = received / elapsed;
           let percent = null;
           if (total > 0) {
             percent = Math.round((received / total) * 100);
@@ -119,6 +179,9 @@ function downloadFile(win, url, fileName, gameId) {
   }
 }
 
+/* -----------------------------
+          IPC ДЛЯ ИГР
+------------------------------*/
 ipcMain.on('download-game', (event, payload) => {
   const win = BrowserWindow.fromWebContents(event.sender);
   const { url, fileName, gameId } = payload;
@@ -132,11 +195,18 @@ ipcMain.on('download-game', (event, payload) => {
   downloadFile(win, url, fileName, gameId);
 });
 
+/* -----------------------------
+      СТАРТ ПРИЛОЖЕНИЯ
+------------------------------*/
 app.whenReady().then(() => {
-  createWindow();
+  const win = createWindow();
+  setupAutoUpdater(win);
 
   app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+    if (BrowserWindow.getAllWindows().length === 0) {
+      const newWin = createWindow();
+      setupAutoUpdater(newWin);
+    }
   });
 });
 
