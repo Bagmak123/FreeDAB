@@ -1,32 +1,31 @@
 {
-  "name": "freetp_launcher_v8",
+  "name": "freetp-launcher",
   "version": "1.0.0",
-  "description": "Freetp launcher v8",
+  "description": "Freetp Game Launcher",
   "author": "Bagmak123",
   "main": "main.js",
+
   "scripts": {
     "start": "electron .",
-    "dist": "electron-builder",
-    "build": "electron-builder"
+    "dist": "electron-builder --win --x64"
   },
-  "devDependencies": {
-    "electron": "^39.2.0",
-    "electron-builder": "^24.13.3"
-  },
+
   "build": {
     "appId": "com.freetp.launcher",
     "productName": "Freetp Launcher",
-    "files": [
-      "**/*"
-    ],
-    "win": {
-      "target": "nsis",
-      "icon": "icon.ico",
-      "sign": false
+    "directories": {
+      "output": "dist"
     },
-    "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true
+    "win": {
+      "target": "nsis"
     }
+  },
+
+  "dependencies": {
+  },
+
+  "devDependencies": {
+    "electron": "^29.0.0",
+    "electron-builder": "^24.13.3"
   }
 }
