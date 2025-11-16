@@ -37,4 +37,16 @@ contextBridge.exposeInMainWorld('updater', {
 
   // Текущая версия приложения
   onAppVersion: (cb) => ipcRenderer.on("app-version", (_e, version) => cb(version)),
+      });
+
+contextBridge.exposeInMainWorld("settings", {
+  getPath: () => ipcRenderer.invoke("settings-get-path"),
+  choosePath: () => ipcRenderer.invoke("settings-choose-path"),
+  savePath: (p) => ipcRenderer.invoke("settings-save-path", p)
+});
+
+contextBridge.exposeInMainWorld("updates", {
+  check: () => ipcRenderer.invoke("update-check"),
+  apply: () => ipcRenderer.invoke("update-apply"),
+  onStatus: (cb) => ipcRenderer.on("update-status", (_e, data) => cb(data))
 });
