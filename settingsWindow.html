@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Настройки FreeDAB Launcher</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: system-ui, sans-serif;
+      background: #0d0d15;
+      color: #f5f5f5;
+      padding: 20px 26px;
+    }
+
+    h2 {
+      margin-top: 0;
+      font-size: 20px;
+      font-weight: 600;
+      margin-bottom: 18px;
+    }
+
+    .block {
+      background: #14141f;
+      padding: 16px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .label {
+      font-size: 13px;
+      opacity: 0.7;
+      margin-bottom: 6px;
+    }
+
+    input {
+      width: 100%;
+      padding: 8px;
+      border-radius: 8px;
+      font-size: 14px;
+      border: 1px solid rgba(255,255,255,0.15);
+      background: #0f0f18;
+      color: #fff;
+      margin-bottom: 10px;
+    }
+
+    button {
+      padding: 8px 14px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #1dd1a1, #48dbfb);
+      color: #051214;
+    }
+
+    .btn-secondary {
+      background: rgba(255,255,255,0.15);
+      color: #fff;
+    }
+
+    #updateStatus {
+      margin-top: 10px;
+      font-size: 13px;
+      opacity: .8;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>Настройки</h2>
+
+  <!-- Папка загрузок -->
+  <div class="block">
+    <div class="label">Папка загрузки игр:</div>
+    <input id="downloadPath" type="text" readonly>
+    <button id="changeFolder" class="btn-secondary">Выбрать папку…</button>
+  </div>
+
+  <!-- Проверка обновления -->
+  <div class="block">
+    <div class="label">Обновление лаунчера:</div>
+    <button id="checkUpdate" class="btn-primary">Проверить обновления</button>
+
+    <div id="updateStatus"></div>
+
+    <button id="doUpdate" class="btn-primary" style="margin-top:10px; display:none;">
+      Обновить сейчас
+    </button>
+  </div>
+
+  <script>
+    // Загрузка текущих настроек
+    window.settings.getDownloadPath((path) => {
+      document.getElementById("downloadPath").value = path;
+    });
+
+    // Выбор новой папки
+    document.getElementById("changeFolder").onclick = async () => {
+      const newPath = await window.settings.chooseFolder();
+      if (newPath) {
+        document.getElementById("downloadPath").value = newPath;
+        window.settings.setDownloadPath(newPath);
+      }
+    };
+
+    // Проверить обновления вручную
+    document.getElementById("checkUpdate").onclick = () => {
+      document.getElementById("updateStatus").textContent = "Проверка...";
+      window.settings.manualCheckUpdate();
+    };
+
+    // UI реакции
+    window.settings.onChecking(() => {
+      document.getElementById("updateStatus").textContent = "Проверка...";
+      document.getElementById("doUpdate").style.display = "none";
+    });
+
+    window.settings.onAvailable((info) => {
+      document.getElementById("updateStatus").textContent =
+        "Доступно обновление: v" + info.version;
+      document.getElementById("doUpdate").style.display = "inline-block";
+    });
+
+    window.settings.onNotAvailable(() => {
+      document.getElementById("updateStatus").textContent =
+        "Установлена последняя версия.";
+      document.getElementById("doUpdate").style.display = "none";
+    });
+
+    window.settings.onError((err) => {
+      document.getElementById("updateStatus").textContent = "Ошибка: " + err;
+    });
+
+    // Нажата кнопка "Обновить сейчас"
+    document.getElementById("doUpdate").onclick = () => {
+      window.settings.startUpdate();
+    };
+  </script>
+
+</body>
+</html>
