@@ -1,10 +1,10 @@
 name: Build FreeDAB Launcher EXE
 
 on:
-  workflow_dispatch:      # запуск вручную
+  workflow_dispatch:
   push:
     branches:
-      - main              # автосборка при пуше в main
+      - main
 
 jobs:
   build:
@@ -31,8 +31,9 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: npm run dist
 
-      # 5. Upload EXE artifact
+      # 5. Upload final installer (.exe)
       - name: Upload built EXE
         uses: actions/upload-artifact@v4
         with:
-          name: FreeD
+          name: FreeDAB-Installer
+          path: dist/*.exe
