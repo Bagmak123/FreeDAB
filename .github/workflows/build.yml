@@ -1,14 +1,9 @@
-name: Build Freetp Launcher EXE
-
-on:
-  push:
-    branches:
-      - main
-  workflow_dispatch:
-
 jobs:
   build:
     runs-on: windows-latest
+
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
       - name: Checkout repository
@@ -26,7 +21,7 @@ jobs:
         run: npm run dist
 
       - name: Upload built EXE
-        uses: actions/upload-artifact@v4   # ⭐ исправлено
+        uses: actions/upload-artifact@v4
         with:
-          name: freetp-launcher-exe
+          name: FreeDAB-exe
           path: dist/*.exe
