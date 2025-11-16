@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <title>Freetp — лаунчер бесплатных игр</title>
+  <title>FreeDAB Launcher</title>
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
@@ -73,15 +73,6 @@
       outline: none;
     }
 
-    .search input::placeholder {
-      color: rgba(255,255,255,0.4);
-    }
-
-    .tagline {
-      font-size: 12px;
-      opacity: .6;
-    }
-
     main {
       padding: 20px 28px 32px;
     }
@@ -94,295 +85,188 @@
       margin-top: 10px;
     }
 
-    .section-header h2 {
-      margin: 0;
-      font-size: 20px;
-    }
-
     .game-list {
       display: grid;
       gap: 18px;
       grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
     }
 
-    .game-card {
-      background: radial-gradient(circle at top left, rgba(255,255,255,0.07), rgba(10,10,20,0.95));
-      border-radius: 18px;
-      padding: 14px;
-      border: 1px solid rgba(255,255,255,0.05);
-      box-shadow: 0 18px 40px rgba(0,0,0,0.6);
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      position: relative;
-      overflow: hidden;
-    }
+    /* ------- ОКНО АВТООБНОВЛЕНИЯ ------- */
 
-    .game-tag {
-      position: absolute;
-      top: 10px;
-      right: 12px;
-      font-size: 11px;
-      padding: 3px 8px;
-      border-radius: 999px;
-      background: rgba(28, 187, 180, 0.9);
-      color: #02110f;
-      font-weight: 600;
-    }
-
-    .thumb {
-      height: 110px;
-      border-radius: 12px;
-      background-size: cover;
-      background-position: center;
-      background-repeat: no-repeat;
-      margin-bottom: 4px;
-    }
-
-    .game-title {
-      font-size: 16px;
-      font-weight: 600;
-    }
-
-    .game-meta {
-      font-size: 11px;
-      opacity: .75;
-    }
-
-    .game-desc {
-      font-size: 13px;
-      opacity: .85;
-    }
-
-    .card-footer {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-top: 8px;
-      gap: 8px;
-    }
-
-    .button-primary {
-      border: none;
-      border-radius: 999px;
-      padding: 7px 14px;
-      font-size: 13px;
-      font-weight: 600;
-      cursor: pointer;
-      background: linear-gradient(135deg, #ff6b6b, #ffc371);
-      color: #111;
-      box-shadow: 0 6px 18px rgba(0,0,0,0.6);
-      transition: transform .1s ease, box-shadow .1s ease, filter .1s ease;
-      flex: 1;
-    }
-
-    .button-primary[disabled] {
-      opacity: .6;
-      cursor: default;
-    }
-
-    .button-primary:hover:not([disabled]) {
-      transform: translateY(-1px);
-      box-shadow: 0 10px 24px rgba(0,0,0,0.7);
-      filter: brightness(1.05);
-    }
-
-    .footer-right {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .chip {
-      font-size: 11px;
-      padding: 3px 10px;
-      border-radius: 999px;
-      border: 1px solid rgba(255,255,255,0.15);
-      opacity: .8;
-    }
-
-    .gear-btn {
-      width: 26px;
-      height: 26px;
-      border-radius: 999px;
-      border: 1px solid rgba(255,255,255,0.25);
-      background: rgba(9,9,15,0.9);
-      color: #f5f5f5;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 14px;
-      cursor: default;
-      opacity: .35;
-    }
-
-    body.admin-on .gear-btn {
-      cursor: pointer;
-      opacity: .9;
-    }
-
-    .download-status {
-      font-size: 11px;
-      opacity: .7;
-      margin-top: 2px;
-    }
-
-    .empty {
-      margin-top: 40px;
-      text-align: center;
-      opacity: .6;
-      font-size: 14px;
-    }
-
-    /* Admin panel */
-    #adminPanel {
+    #updateWindow {
       position: fixed;
-      top: 80px;
-      right: 40px;
-      width: 380px;
-      max-height: 520px;
-      background: #0c0c13;
-      border-radius: 16px;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 360px;
+      padding: 20px;
+      background: #0f0f16;
       border: 1px solid rgba(255,255,255,0.12);
-      box-shadow: 0 18px 45px rgba(0,0,0,0.8);
-      padding: 0 16px 16px;
-      z-index: 9999;
+      border-radius: 16px;
+      box-shadow: 0 22px 45px rgba(0,0,0,0.7);
       display: none;
+      z-index: 99999;
+      text-align: center;
+    }
+
+    #updateTitle {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 10px;
+    }
+
+    #updateText {
+      opacity: .8;
+      font-size: 14px;
+      margin-bottom: 18px;
+    }
+
+    #updateProgress {
+      width: 100%;
+      height: 6px;
+      background: rgba(255,255,255,0.15);
+      border-radius: 6px;
       overflow: hidden;
+      margin: 10px 0 16px;
     }
 
-    #adminHeader {
-      cursor: move;
+    #updateBar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(135deg, #48dbfb, #1dd1a1);
+      transition: width 0.25s linear;
+    }
+
+    .update-buttons {
       display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 10px 4px 8px;
-      position: sticky;
-      top: 0;
-      background: #0c0c13;
+      gap: 10px;
     }
 
-    #adminHeaderTitle {
-      font-size: 15px;
-      font-weight: 600;
-    }
-
-    .admin-header-buttons button {
-      width: 22px;
-      height: 22px;
-      border-radius: 999px;
-      border: none;
-      cursor: pointer;
-      background: rgba(255,255,255,0.12);
-      color: #f5f5f5;
-      font-size: 13px;
-      margin-left: 4px;
-    }
-
-    #adminPanel p {
-      margin: 0 0 10px 0;
-      font-size: 12px;
-      opacity: .7;
-    }
-
-    #adminPanel input {
-      width: 100%;
-      margin-bottom: 8px;
-      padding: 6px 8px;
+    .update-btn {
+      flex: 1;
+      padding: 8px;
       border-radius: 8px;
-      border: 1px solid rgba(255,255,255,0.2);
-      background: #10101a;
-      color: #f5f5f5;
-      font-size: 13px;
-    }
-
-    #adminPanel button#admSubmitBtn {
-      width: 100%;
-      padding: 8px 10px;
-      border-radius: 10px;
+      background: linear-gradient(135deg, #48dbfb, #1dd1a1);
       border: none;
       cursor: pointer;
-      font-size: 13px;
       font-weight: 600;
-      background: linear-gradient(135deg, #1dd1a1, #48dbfb);
       color: #03110d;
-      margin-top: 4px;
     }
 
-    #adminPanel .hint {
-      font-size: 11px;
-      opacity: .5;
-      margin-top: 6px;
+    .update-cancel {
+      background: rgba(255,255,255,0.15);
+      color: #fff;
     }
 
-    /* Floating bubble when minimized */
-    #adminBubble {
+    /* ---- Версия приложения ---- */
+
+    #appVersion {
       position: fixed;
-      bottom: 30px;
-      right: 30px;
-      width: 44px;
-      height: 44px;
-      border-radius: 999px;
-      background: radial-gradient(circle at top, #1dd1a1, #0984e3);
-      color: #050811;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      font-size: 20px;
-      cursor: pointer;
-      box-shadow: 0 14px 30px rgba(0,0,0,0.7);
-      z-index: 9999;
+      bottom: 12px;
+      right: 18px;
+      font-size: 12px;
+      opacity: .35;
       user-select: none;
     }
+
   </style>
 </head>
 <body>
+
+  <!-- Окно автообновления -->
+  <div id="updateWindow">
+    <div id="updateTitle">Проверка обновлений…</div>
+    <div id="updateText">Подождите немного</div>
+
+    <div id="updateProgress">
+      <div id="updateBar"></div>
+    </div>
+
+    <div class="update-buttons">
+      <button class="update-btn" id="updateNow" style="display:none;">Обновить</button>
+      <button class="update-btn update-cancel" id="updateCancel">Закрыть</button>
+    </div>
+  </div>
+
   <header>
     <div class="logo">
-      <div class="logo-icon">F</div>
+      <div class="logo-icon">D</div>
       <div>
-        <div class="logo-text">Freetp Launcher</div>
-        <div class="logo-sub">бесплатные игры • встроенное скачивание</div>
+        <div class="logo-text">FreeDAB Launcher</div>
+        <div class="logo-sub">бесплатные игры • автообновление • загрузки</div>
       </div>
     </div>
     <div class="search">
       <input id="searchInput" type="text" placeholder="Поиск по играм..." />
     </div>
-    <div class="tagline">alpha 0.4</div>
+
+    <div id="appVersion">v 0.0.0</div>
   </header>
+
   <main>
     <div class="section-header">
       <h2>Каталог игр</h2>
       <div class="chip" id="gamesCountChip">0 игр</div>
     </div>
+
     <div class="game-list" id="gameList"></div>
     <div class="empty" id="emptyState" style="display:none;">
-      Ничего не найдено. Попробуй изменить запрос поиска.
+      Ничего не найдено.
     </div>
   </main>
 
-  <!-- Admin panel (secret) -->
-  <div id="adminPanel">
-    <div id="adminHeader">
-      <div id="adminHeaderTitle">Админ-панель</div>
-      <div class="admin-header-buttons">
-        <button id="adminMinimizeBtn">–</button>
-      </div>
-    </div>
-    <p>Добавляй и редактируй свои игры. Открывается по секретной фразе.</p>
-    <input id="admTitle" placeholder="Название игры" />
-    <input id="admDesc" placeholder="Описание" />
-    <input id="admGenre" placeholder="Жанр (аркада, шутер...)" />
-    <input id="admPlatform" placeholder="Платформа (Windows / Linux...)" />
-    <input id="admThumb" placeholder="URL картинки (миниатюра)" />
-    <input id="admURL" placeholder="Прямая ссылка на файл игры (zip/exe/...)" />
-    <button id="admSubmitBtn">Добавить игру</button>
-    <p class="hint">Секретная фраза: набери в лаунчере <b>/dabbyadmin1988pasha</b></p>
-  </div>
-
-  <!-- Floating bubble for minimized admin -->
-  <div id="adminBubble">⚙</div>
-
   <script src="renderer.js"></script>
+
+  <script>
+    /* =======================
+          АВТООБНОВЛЕНИЕ
+       ======================= */
+
+    const win = document.getElementById("updateWindow");
+    const title = document.getElementById("updateTitle");
+    const text = document.getElementById("updateText");
+    const bar = document.getElementById("updateBar");
+    const updateNow = document.getElementById("updateNow");
+    const cancel = document.getElementById("updateCancel");
+
+    cancel.onclick = () => win.style.display = "none";
+
+    updateNow.onclick = () => {
+      updater.startUpdate();
+      updateNow.style.display = "none";
+      text.innerText = "Скачивание обновления...";
+    };
+
+    updater.onChecking(() => {
+      win.style.display = "block";
+      title.innerText = "Проверка обновлений…";
+      text.innerText = "Подождите немного";
+      bar.style.width = "0%";
+    });
+
+    updater.onAvailable(info => {
+      title.innerText = "Доступно обновление!";
+      text.innerText = "Версия: " + info.version;
+      updateNow.style.display = "block";
+    });
+
+    updater.onNotAvailable(() => {
+      win.style.display = "none";
+    });
+
+    updater.onDownloadProgress(data => {
+      bar.style.width = Math.round(data.percent) + "%";
+    });
+
+    updater.onDownloaded(() => {
+      text.innerText = "Готово! Перезапуск...";
+    });
+
+    // Версия приложения
+    updater.onAppVersion(v => {
+      document.getElementById("appVersion").innerText = "v " + v;
+    });
+  </script>
+
 </body>
 </html>
