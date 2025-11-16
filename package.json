@@ -1,7 +1,7 @@
 {
-  "name": "freetp-launcher",
+  "name": "freedab-launcher",
   "version": "1.0.0",
-  "description": "Freetp Game Launcher",
+  "description": "FreeDAB Game Launcher",
   "author": "Bagmak123",
   "main": "main.js",
 
@@ -11,27 +11,31 @@
   },
 
   "build": {
-    "appId": "com.freetp.launcher",
-    "productName": "Freetp Launcher",
+    "appId": "com.freedab.launcher",
+    "productName": "FreeDAB Launcher",
     "directories": {
       "output": "dist"
     },
     "files": [
       "**/*",
-      "!dist/**/*"
+      "!node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme}",
+      "!**/*.map",
+      "!**/*.md"
     ],
     "win": {
-      "target": "nsis"
+      "target": "nsis",
+      "icon": "build/icon.ico"
     },
     "nsis": {
       "oneClick": false,
       "perMachine": false,
-      "allowToChangeInstallationDirectory": true
+      "allowToChangeInstallationDirectory": true,
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico"
     }
   },
 
   "dependencies": {},
-
   "devDependencies": {
     "electron": "^29.0.0",
     "electron-builder": "^24.13.3"
