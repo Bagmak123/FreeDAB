@@ -28,6 +28,8 @@ function saveSettings(obj) {
 /* ======================================================
                       СОЗДАНИЕ ОКНА
 ======================================================*/
+let mainWindow = null;
+
 function createWindow() {
   const win = new BrowserWindow({
     width: 1200,
@@ -48,88 +50,99 @@ function createWindow() {
     return { action: "deny" };
   });
 
+  mainWindow = win;
   return win;
 }
 
 /* ======================================================
                  АВТООБНОВЛЕНИЕ LAUNCHER
 ======================================================*/
-function setupAutoUpdater(win) {
+function setupAutoUpdater() {
   autoUpdater.autoDownload = false;
 
-  win.webContents.on("did-finish-load", () => {
-    win.webContents.send("app-version", app.getVersion());
+  // Версия для UI
+  autoUpdater.on("checking-for-update", () => {
+    if (mainWindow) {
+      mainWindow.webContents.send("app-version", app.getVersion());
+      mainWindow.webContents.send("update-checking");
+    }
   });
 
-  // Проверка при запуске
-  win.webContents.send("update-checking");
-  autoUpdater.checkForUpdates();
-
   autoUpdater.on("update-available", (info) => {
-    win.webContents.send("update-available", info);
+    if (mainWindow) {
+      mainWindow.webContents.send("update-available", info);
+      mainWindow.webContents.send("update-status", {
+        status: "available",
+        info
+      });
+    }
   });
 
   autoUpdater.on("update-not-available", () => {
-    win.webContents.send("update-not-available");
+    if (mainWindow) {
+      mainWindow.webContents.send("update-not-available");
+      mainWindow.webContents.send("update-status", { status: "latest" });
+    }
   });
 
   autoUpdater.on("error", (err) => {
-    win.webContents.send("update-error", err.message);
+    if (mainWindow) {
+      mainWindow.webContents.send("update-error", err.message);
+      mainWindow.webContents.send("update-status", {
+        status: "error",
+        message: err.message
+      });
+    }
   });
 
   autoUpdater.on("download-progress", (p) => {
-    win.webContents.send("update-progress", {
-      percent: Math.round(p.percent),
-      transferred: p.transferred,
-      total: p.total,
-      speed: p.bytesPerSecond
-    });
+    if (mainWindow) {
+      const payload = {
+        percent: Math.round(p.percent),
+        transferred: p.transferred,
+        total: p.total,
+        speed: p.bytesPerSecond
+      };
+      mainWindow.webContents.send("update-progress", payload);
+      mainWindow.webContents.send("update-status", {
+        status: "downloading",
+        percent: p.percent
+      });
+    }
   });
 
   autoUpdater.on("update-downloaded", () => {
-    win.webContents.send("update-downloaded");
-    setTimeout(() => autoUpdater.quitAndInstall(), 5000);
+    if (mainWindow) {
+      mainWindow.webContents.send("update-downloaded");
+      mainWindow.webContents.send("update-status", { status: "ready" });
+    }
+    // Даём 5 секунд на анимацию, затем перезапуск с обновлением
+    setTimeout(() => {
+      autoUpdater.quitAndInstall();
+    }, 5000);
   });
 
-  // Команда на скачивание
-  ipcMain.on("start-update", () => {
-    autoUpdater.downloadUpdate();
+  // Запуск проверки при старте
+  app.whenReady().then(() => {
+    autoUpdater.checkForUpdates();
   });
 
-  /* ----------- Кнопка "Проверить обновление" из настроек ----------- */
+  // Из настроек: "Проверить обновление"
   ipcMain.handle("update-check", async () => {
     autoUpdater.autoDownload = false;
     autoUpdater.checkForUpdates();
     return true;
   });
 
+  // Из настроек: "Обновить сейчас"
   ipcMain.handle("update-apply", async () => {
     autoUpdater.downloadUpdate();
     return true;
   });
 
-  // Отправляем статус в renderer (для настроек)
-  autoUpdater.on("update-available", info => {
-    win.webContents.send("update-status", {
-      status: "available",
-      info
-    });
-  });
-
-  autoUpdater.on("update-not-available", () => {
-    win.webContents.send("update-status", { status: "latest" });
-  });
-
-  autoUpdater.on("download-progress", p => {
-    win.webContents.send("update-status", {
-      status: "downloading",
-      percent: p.percent
-    });
-  });
-
-  autoUpdater.on("update-downloaded", () => {
-    win.webContents.send("update-status", { status: "ready" });
-    setTimeout(() => autoUpdater.quitAndInstall(), 2000);
+  // Старый канал из окна обновления
+  ipcMain.on("start-update", () => {
+    autoUpdater.downloadUpdate();
   });
 }
 
@@ -140,7 +153,6 @@ function downloadFile(win, url, fileName, gameId) {
   try {
     const settings = loadSettings();
     const downloadsDir = settings.downloadPath || app.getPath("downloads");
-
     const filePath = path.join(downloadsDir, fileName || "game-download");
 
     const startTime = Date.now();
@@ -156,6 +168,7 @@ function downloadFile(win, url, fileName, gameId) {
       const client = currentUrl.startsWith("http://") ? http : https;
 
       const req = client.get(currentUrl, (response) => {
+        // Редиректы (GitHub Releases и др.)
         if (response.statusCode === 301 || response.statusCode === 302) {
           let redirectUrl = response.headers.location;
           if (!redirectUrl) {
@@ -250,6 +263,7 @@ ipcMain.on("download-game", (event, payload) => {
 
 /* ======================================================
                     НАСТРОЙКИ ПОЛЬЗОВАТЕЛЯ
+   (путь загрузки — используется в настройках и загрузчике)
 ======================================================*/
 ipcMain.handle("settings-get-path", () => {
   return loadSettings().downloadPath;
@@ -272,9 +286,20 @@ ipcMain.handle("settings-save-path", (_e, newPath) => {
 });
 
 /* ======================================================
+      "ПУБЛИКАЦИЯ ОБНОВЛЕНИЯ" ИЗ АДМИН-ПАНЕЛИ
+   (откроем страницу GitHub Actions, где ты жмёшь Run)
+======================================================*/
+ipcMain.handle("open-ci-actions", () => {
+  const url = "https://github.com/Bagmak123/FreeDAB/actions";
+  shell.openExternal(url);
+  return true;
+});
+
+/* ======================================================
                       ЗАПУСК APP
 ======================================================*/
 app.whenReady().then(() => {
+  // Автозапуск лаунчера при старте Windows
   if (process.platform === "win32") {
     app.setLoginItemSettings({
       openAtLogin: true,
@@ -282,13 +307,12 @@ app.whenReady().then(() => {
     });
   }
 
-  const win = createWindow();
-  setupAutoUpdater(win);
+  createWindow();
+  setupAutoUpdater();
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {
-      const newWin = createWindow();
-      setupAutoUpdater(newWin);
+      createWindow();
     }
   });
 });
