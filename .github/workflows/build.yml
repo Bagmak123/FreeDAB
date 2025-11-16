@@ -2,8 +2,9 @@ name: Build Freetp Launcher EXE
 
 on:
   push:
-    branches: [ "main" ]
-  workflow_dispatch:   # позволяет запускать вручную
+    branches:
+      - main
+  workflow_dispatch:
 
 jobs:
   build:
@@ -11,23 +12,21 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: 18
 
       - name: Install dependencies
         run: npm install
 
-      - name: Build EXE
-        run: |
-          npm install electron-builder --save-dev
-          npx electron-builder --win --x64
+      - name: Build EXE (electron-builder)
+        run: npm run dist
 
-      - name: Upload EXE artifact
-        uses: actions/upload-artifact@v3
+      - name: Upload built EXE
+        uses: actions/upload-artifact@v4   # ⭐ исправлено
         with:
-          name: FreeDAB-exe
+          name: freetp-launcher-exe
           path: dist/*.exe
