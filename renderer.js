@@ -1,46 +1,21 @@
-/* =============================
-      БАЗОВЫЕ ДАННЫЕ
-============================= */
+/* ==========================================================
+                     НАСТРОЙКИ GITHUB API
+========================================================== */
+const GITHUB_OWNER = "Bagmak123";
+const GITHUB_REPO = "FreeDAB";
+const GAMES_FILE = "games.json";
 
-// Читаем игры из localStorage
-let saved = localStorage.getItem("games");
-let games = saved ? JSON.parse(saved) : [
-  {
-    id: 'cube-runner',
-    title: 'Cube Runner',
-    description: 'Мини-аркада: уклоняйся от препятствий и набирай очки.',
-    genre: 'Аркада',
-    platform: 'Windows',
-    url: 'https://speed.hetzner.de/100MB.bin',
-    thumb: 'https://dummyimage.com/640x360/24263a/ffffff&text=Cube+Runner'
-  },
-  {
-    id: 'space-shooter',
-    title: 'Space Shooter',
-    description: 'Классический 2D-шутер в космосе с волнами врагов.',
-    genre: 'Шутер',
-    platform: 'Windows / Linux',
-    url: 'https://speed.hetzner.de/100MB.bin',
-    thumb: 'https://dummyimage.com/640x360/1d2833/ffffff&text=Space+Shooter'
-  },
-  {
-    id: 'puzzle-lines',
-    title: 'Neon Lines',
-    description: 'Логическая игра: соедини все точки, не отрывая линию.',
-    genre: 'Головоломка',
-    platform: 'Windows',
-    url: 'https://speed.hetzner.de/100MB.bin',
-    thumb: 'https://dummyimage.com/640x360/222631/ffffff&text=Neon+Lines'
-  }
-];
+// ↓↓↓ ТОКЕН ПОДСТАВИТ MAIN.JS (через preload)
+let githubToken = null;
 
-// HTML элементы
+/* ==========================================================
+                 ЭЛЕМЕНТЫ ИНТЕРФЕЙСА
+========================================================== */
 const listEl = document.getElementById('gameList');
 const emptyEl = document.getElementById('emptyState');
 const searchInput = document.getElementById('searchInput');
 const countChip = document.getElementById('gamesCountChip');
 
-// Admin UI
 const adminPanel = document.getElementById('adminPanel');
 const adminHeader = document.getElementById('adminHeader');
 const adminMinimizeBtn = document.getElementById('adminMinimizeBtn');
@@ -53,226 +28,204 @@ const admPlatform = document.getElementById('admPlatform');
 const admThumb = document.getElementById('admThumb');
 const admURL = document.getElementById('admURL');
 const admSubmitBtn = document.getElementById('admSubmitBtn');
-const admDeleteBtn = document.getElementById('admDeleteBtn');
 
-// Admin state
+let games = [];
+let editingGameId = null;
 let isAdminMode = false;
-let editGameId = null;
 
-// Download states
-const downloadState = {}; // { [id]: {status, percent, speed} }
+const downloadState = {}; // { id: {status, percent, speed, filePath} }
 
+/* ==========================================================
+                       ЗАГРУЗКА ИГР
+========================================================== */
+async function loadGames() {
+  try {
+    const url = `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/main/games.json`;
+    const res = await fetch(url);
+    games = await res.json();
 
-/* =============================
-      ГЛАВНЫЙ РЕНДЕР КАРТОЧЕК
-============================= */
+    localStorage.setItem("cached_games", JSON.stringify(games));
 
+    render(games);
+    return true;
+  } catch (err) {
+    console.warn("Не удалось загрузить игры с GitHub. Используем кэш.", err);
+    const cached = localStorage.getItem("cached_games");
+    if (cached) {
+      games = JSON.parse(cached);
+      render(games);
+      return true;
+    }
+    return false;
+  }
+}
+
+/* ==========================================================
+                       СОХРАНЕНИЕ ИГР
+========================================================== */
+async function saveGamesToGitHub() {
+  if (!githubToken) {
+    alert("Ошибка: GH_TOKEN недоступен.");
+    return;
+  }
+
+  const apiUrl = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${GAMES_FILE}`;
+
+  const getRes = await fetch(apiUrl);
+  const getJson = await getRes.json();
+  const sha = getJson.sha;
+
+  const updatedContent = btoa(unescape(encodeURIComponent(JSON.stringify(games, null, 2))));
+
+  await fetch(apiUrl, {
+    method: "PUT",
+    headers: {
+      "Authorization": `token ${githubToken}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      message: "update games.json automatically",
+      content: updatedContent,
+      sha
+    })
+  });
+
+  alert("Игры успешно сохранены на GitHub!");
+}
+
+/* ==========================================================
+                       РЕНДЕР КАРТОЧЕК
+========================================================== */
 function render(list) {
-  listEl.innerHTML = '';
-
+  listEl.innerHTML = "";
   if (!list.length) {
-    emptyEl.style.display = 'block';
+    emptyEl.style.display = "block";
     countChip.textContent = "0 игр";
     return;
   }
 
-  emptyEl.style.display = 'none';
-  countChip.textContent = list.length + " " + pluralize(list.length);
+  emptyEl.style.display = "none";
+  countChip.textContent = list.length + " игр";
 
-  for (const g of list) {
-    const wrap = document.createElement('div');
-    wrap.className = "game-card";
+  list.forEach(game => {
+    const card = document.createElement("div");
+    card.className = "game-card";
 
-    // Жанр
-    const tag = document.createElement('div');
+    // тег жанра
+    const tag = document.createElement("div");
     tag.className = "game-tag";
-    tag.textContent = g.genre || "Игра";
-    wrap.appendChild(tag);
+    tag.textContent = game.genre || "Игра";
+    card.appendChild(tag);
 
-    // Картинка
-    const img = document.createElement('div');
-    img.className = "thumb";
-    img.style.backgroundImage = `url('${g.thumb}')`;
-    wrap.appendChild(img);
+    // миниатюра
+    const thumb = document.createElement("div");
+    thumb.className = "thumb";
+    thumb.style.backgroundImage = `url('${game.thumb}')`;
+    card.appendChild(thumb);
 
-    // Название
-    const ttl = document.createElement('div');
-    ttl.className = "game-title";
-    ttl.textContent = g.title;
-    wrap.appendChild(ttl);
+    // заголовок
+    const title = document.createElement("div");
+    title.className = "game-title";
+    title.textContent = game.title;
+    card.appendChild(title);
 
-    // Платформа
-    const meta = document.createElement('div');
+    // платформа
+    const meta = document.createElement("div");
     meta.className = "game-meta";
-    meta.textContent = g.platform;
-    wrap.appendChild(meta);
+    meta.textContent = game.platform || "";
+    card.appendChild(meta);
 
-    // Описание
-    const desc = document.createElement('div');
+    // описание
+    const desc = document.createElement("div");
     desc.className = "game-desc";
-    desc.textContent = g.description;
-    wrap.appendChild(desc);
+    desc.textContent = game.description || "";
+    card.appendChild(desc);
 
-    // Footer
-    const footer = document.createElement('div');
+    // футер
+    const footer = document.createElement("div");
     footer.className = "card-footer";
 
-    // Кнопка скачать
-    const btn = document.createElement('button');
+    // кнопка скачать
+    const btn = document.createElement("button");
     btn.className = "button-primary";
-    btn.dataset.gameId = g.id;
 
-    const st = downloadState[g.id] || { status: "idle" };
-    if (st.status === "downloading") {
-      btn.textContent = "Загрузка " + (st.percent || 0) + "%";
+    const state = downloadState[game.id] || { status: "idle" };
+
+    if (state.status === "downloading") {
+      btn.textContent = `${state.percent || 0}%`;
       btn.disabled = true;
-    } else if (st.status === "completed") {
-      btn.textContent = "Скачано ✔";
+    } else if (state.status === "completed") {
+      btn.textContent = "Скачано ✓";
     } else {
-      btn.textContent = "Скачать игру";
+      btn.textContent = "Скачать";
     }
 
-    btn.onclick = () => startDownload(g);
+    btn.addEventListener("click", () => startDownload(game));
     footer.appendChild(btn);
 
-    // Free-to-play + gear
-    const right = document.createElement('div');
+    // блок справа
+    const right = document.createElement("div");
     right.className = "footer-right";
 
-    const chip = document.createElement('div');
+    // чип
+    const chip = document.createElement("div");
     chip.className = "chip";
-    chip.textContent = "Free to play";
+    chip.textContent = "Free";
     right.appendChild(chip);
 
-    const gear = document.createElement('button');
+    // шестерёнка (редактировать)
+    const gear = document.createElement("button");
     gear.className = "gear-btn";
     gear.innerHTML = "⚙";
-    gear.onclick = () => isAdminMode && openAdminPanel(g.id);
+    gear.addEventListener("click", () => {
+      if (!isAdminMode) return;
+      startEditGame(game.id);
+    });
     right.appendChild(gear);
 
+    // кнопка удалить
+    if (isAdminMode) {
+      const del = document.createElement("button");
+      del.textContent = "🗑";
+      del.style.cssText = `
+        background:red;
+        border:none;
+        color:white;
+        border-radius:8px;
+        padding:4px 8px;
+        cursor:pointer;
+      `;
+      del.addEventListener("click", () => deleteGame(game.id));
+      right.appendChild(del);
+    }
+
     footer.appendChild(right);
-    wrap.appendChild(footer);
+    card.appendChild(footer);
 
-    // Status
-    const stEl = document.createElement('div');
-    stEl.className = "download-status";
-
-    if (st.status === "downloading")
-      stEl.textContent = `Загрузка ${st.percent}%`;
-    else if (st.status === "completed")
-      stEl.textContent = "Файл скачан.";
-    else if (st.status === "error")
-      stEl.textContent = "Ошибка загрузки";
-    wrap.appendChild(stEl);
-
-    listEl.appendChild(wrap);
-  }
-}
-
-
-/* =============================
-      ПОИСК
-============================= */
-
-searchInput.oninput = function () {
-  const q = this.value.trim().toLowerCase();
-  if (!q) render(games);
-  else render(games.filter(g =>
-    g.title.toLowerCase().includes(q) ||
-    g.description.toLowerCase().includes(q) ||
-    g.genre.toLowerCase().includes(q)
-  ));
-};
-
-
-/* =============================
-      ЗАГРУЗКА ИГРЫ
-============================= */
-
-function startDownload(g) {
-  downloadState[g.id] = { status: "downloading", percent: 0 };
-  render(games);
-
-  const safeName = g.title.replace(/[^a-z0-9]/gi, "_") + ".bin";
-
-  window.downloader.downloadGame({
-    url: g.url,
-    fileName: safeName,
-    gameId: g.id
+    listEl.appendChild(card);
   });
 }
 
-window.downloader.onProgress((d) => {
-  downloadState[d.gameId] = {
-    status: "downloading",
-    percent: d.percent || 0,
-    speed: d.speed
-  };
+/* ==========================================================
+                       УДАЛЕНИЕ ИГРЫ
+========================================================== */
+function deleteGame(id) {
+  if (!confirm("Удалить игру?")) return;
+
+  games = games.filter(g => g.id !== id);
   render(games);
-});
 
-window.downloader.onComplete(({ gameId }) => {
-  downloadState[gameId] = { status: "completed", percent: 100 };
-  render(games);
-});
-
-window.downloader.onError(({ gameId, error }) => {
-  downloadState[gameId] = { status: "error", error };
-  render(games);
-  alert("Ошибка загрузки: " + error);
-});
-
-
-/* =============================
-      ADMIN MODE (SECRET)
-============================= */
-
-let buffer = "";
-
-document.addEventListener("keydown", (e) => {
-  if (e.key.length === 1) buffer += e.key;
-  if (buffer.length > 40) buffer = buffer.slice(-40);
-
-  if (buffer.includes("/dabbyadmin1988pasha")) {
-    buffer = "";
-    toggleAdmin();
-  }
-});
-
-function toggleAdmin() {
-  isAdminMode = !isAdminMode;
-
-  if (isAdminMode) {
-    document.body.classList.add("admin-on");
-    adminPanel.style.display = "block";
-  } else {
-    document.body.classList.remove("admin-on");
-    adminPanel.style.display = "none";
-    clearAdminForm();
-  }
-
-  render(games);
+  saveGamesToGitHub();
 }
 
-
-/* =============================
-      АДМИН ПАНЕЛЬ (CRUD)
-============================= */
-
-function clearAdminForm() {
-  admTitle.value = "";
-  admDesc.value = "";
-  admGenre.value = "";
-  admPlatform.value = "";
-  admThumb.value = "";
-  admURL.value = "";
-}
-
-function openAdminPanel(id) {
+/* ==========================================================
+                       ДОБАВЛЕНИЕ / РЕДАКТИРОВАНИЕ
+========================================================== */
+function startEditGame(id) {
   const g = games.find(x => x.id === id);
   if (!g) return;
 
-  editGameId = id;
+  editingGameId = id;
 
   admTitle.value = g.title;
   admDesc.value = g.description;
@@ -282,157 +235,151 @@ function openAdminPanel(id) {
   admURL.value = g.url;
 
   admSubmitBtn.textContent = "Сохранить";
-  admDeleteBtn.style.display = "block";
-
-  adminPanel.style.display = "block";
 }
 
-
-// Добавление / сохранение
-admSubmitBtn.onclick = () => {
-  const data = {
-    title: admTitle.value,
-    description: admDesc.value,
-    genre: admGenre.value,
-    platform: admPlatform.value,
-    thumb: admThumb.value,
-    url: admURL.value
+function submitAdmin() {
+  const game = {
+    title: admTitle.value.trim(),
+    description: admDesc.value.trim(),
+    genre: admGenre.value.trim(),
+    platform: admPlatform.value.trim(),
+    url: admURL.value.trim(),
+    thumb: admThumb.value.trim()
   };
 
-  if (!data.title || !data.url) {
-    return alert("Название и URL обязательны!");
-  }
-
-  if (editGameId) {
-    // EDIT
-    const idx = games.findIndex(g => g.id === editGameId);
-    games[idx] = { ...games[idx], ...data };
+  if (editingGameId) {
+    const idx = games.findIndex(g => g.id === editingGameId);
+    games[idx] = { ...games[idx], ...game };
+    editingGameId = null;
   } else {
-    // ADD
-    games.push({
-      id: "game-" + Date.now(),
-      ...data
-    });
+    game.id = "game-" + Date.now();
+    games.push(game);
   }
 
-  localStorage.setItem("games", JSON.stringify(games));
+  clearAdmin();
   render(games);
-
-  editGameId = null;
-  admDeleteBtn.style.display = "none";
-  admSubmitBtn.textContent = "Добавить игру";
-  clearAdminForm();
-};
-
-
-// Удаление игры
-admDeleteBtn.onclick = () => {
-  if (!editGameId) return;
-
-  if (!confirm("Удалить игру?")) return;
-
-  games = games.filter(g => g.id !== editGameId);
-  localStorage.setItem("games", JSON.stringify(games));
-
-  render(games);
-  clearAdminForm();
-
-  admDeleteBtn.style.display = "none";
-  admSubmitBtn.textContent = "Добавить игру";
-  editGameId = null;
-
-  adminPanel.style.display = "none";
-};
-
-
-// Минимизировать
-adminMinimizeBtn.onclick = () => {
-  adminPanel.style.display = "none";
-  adminBubble.style.display = "flex";
-};
-adminBubble.onclick = () => {
-  adminPanel.style.display = "block";
-  adminBubble.style.display = "none";
-};
-
-
-/* =============================
-      HELPERS
-============================= */
-
-function pluralize(n) {
-  if (n % 10 === 1 && n % 100 !== 11) return "игра";
-  if ([2,3,4].includes(n % 10) && ![12,13,14].includes(n % 100))
-    return "игры";
-  return "игр";
+  saveGamesToGitHub();
 }
 
+function clearAdmin() {
+  admTitle.value = "";
+  admDesc.value = "";
+  admGenre.value = "";
+  admPlatform.value = "";
+  admThumb.value = "";
+  admURL.value = "";
+  admSubmitBtn.textContent = "Добавить";
+}
 
-/* =============================
-      INITIAL RENDER
-============================= */
-render(games);
+admSubmitBtn.addEventListener("click", submitAdmin);
 
-/* =====================
-       НАСТРОЙКИ
-===================== */
-
-const settingsBtn = document.getElementById("settingsBtn");
-const settingsWindow = document.getElementById("settingsWindow");
-const closeSettings = document.getElementById("closeSettings");
-const downloadPath = document.getElementById("downloadPath");
-const changeDownloadPath = document.getElementById("changeDownloadPath");
-
-const checkUpdateBtn = document.getElementById("checkUpdateBtn");
-const applyUpdateBtn = document.getElementById("applyUpdateBtn");
-const updateStatus = document.getElementById("updateStatus");
-
-settingsBtn.addEventListener("click", async () => {
-  settingsWindow.style.display = "block";
-
-  const path = await window.settings.getPath();
-  downloadPath.textContent = path;
+/* ==========================================================
+                       ПОИСК
+========================================================== */
+searchInput.addEventListener("input", () => {
+  const q = searchInput.value.toLowerCase();
+  const filtered = games.filter(g =>
+    g.title.toLowerCase().includes(q) ||
+    g.description.toLowerCase().includes(q)
+  );
+  render(filtered);
 });
 
-closeSettings.addEventListener("click", () => {
-  settingsWindow.style.display = "none";
-});
-
-changeDownloadPath.addEventListener("click", async () => {
-  const p = await window.settings.choosePath();
-  if (!p) return;
-  await window.settings.savePath(p);
-  downloadPath.textContent = p;
-});
-
-/* ----- ОБНОВЛЕНИЯ ----- */
-
-checkUpdateBtn.addEventListener("click", async () => {
-  updateStatus.textContent = "Проверка...";
-  applyUpdateBtn.style.display = "none";
-  await window.updates.check();
-});
-
-window.updates.onStatus((data) => {
-  if (data.status === "latest") {
-    updateStatus.textContent = "Вы используете последнюю версию ✓";
-  }
-  if (data.status === "available") {
-    updateStatus.textContent = "Доступно обновление: v" + data.info.version;
-    applyUpdateBtn.style.display = "inline-block";
-  }
-  if (data.status === "downloading") {
-    updateStatus.textContent = "Скачивание: " + Math.round(data.percent) + "%";
-  }
-  if (data.status === "ready") {
-    updateStatus.textContent = "Готово! Перезапуск...";
-    applyUpdateBtn.style.display = "none";
+/* ==========================================================
+                       СЕКРЕТНАЯ ФРАЗА
+========================================================== */
+let buffer = "";
+document.addEventListener("keydown", e => {
+  if (e.key.length === 1) buffer += e.key;
+  if (buffer.includes("/dabbyadmin1988pasha")) {
+    isAdminMode = !isAdminMode;
+    buffer = "";
+    render(games);
+    adminPanel.style.display = isAdminMode ? "block" : "none";
   }
 });
 
-applyUpdateBtn.addEventListener("click", () => {
-  updateStatus.textContent = "Скачивание...";
-  applyUpdateBtn.style.display = "none";
-  window.updates.apply();
+/* ==========================================================
+                СКАЧИВАНИЕ ИГР ЧЕРЕЗ MAIN.JS
+========================================================== */
+function startDownload(game) {
+  const safeName = (game.title.replace(/[^a-z0-9_-]/gi, "_") + ".zip").slice(0, 40);
+
+  downloadState[game.id] = { status: "downloading", percent: 0 };
+  render(games);
+
+  window.downloader.downloadGame({
+    url: game.url,
+    fileName: safeName,
+    gameId: game.id
+  });
+}
+
+window.downloader.onProgress(data => {
+  const st = downloadState[data.gameId];
+  st.status = "downloading";
+  st.percent = data.percent;
+  st.speed = data.speed;
+
+  render(games);
 });
 
+window.downloader.onComplete(data => {
+  downloadState[data.gameId].status = "completed";
+  render(games);
+  alert("Файл скачан:\n" + data.filePath);
+});
+
+window.downloader.onError(data => {
+  downloadState[data.gameId].status = "error";
+  render(games);
+  alert("Ошибка загрузки: " + data.error);
+});
+
+/* ==========================================================
+                       АПДЕЙТЕР (UI)
+========================================================== */
+if (window.updater) {
+  window.updater.onAppVersion(v => {
+    document.getElementById("appVersion").textContent = "v " + v;
+  });
+
+  window.updater.onChecking(() => {
+    document.getElementById("updateWindow").style.display = "block";
+  });
+
+  window.updater.onAvailable(info => {
+    document.getElementById("updateTitle").textContent = "Доступно обновление";
+    document.getElementById("updateText").textContent = "v" + info.version;
+    document.getElementById("updateNow").style.display = "block";
+  });
+
+  window.updater.onDownloadProgress(p => {
+    document.getElementById("updateBar").style.width = p.percent + "%";
+  });
+
+  window.updater.onDownloaded(() => {
+    document.getElementById("updateTitle").textContent = "Завершено ✓";
+    document.getElementById("updateBar").style.width = "100%";
+  });
+
+  document.getElementById("updateNow").onclick = () => {
+    window.updater.startUpdate();
+  };
+
+  document.getElementById("updateCancel").onclick = () => {
+    document.getElementById("updateWindow").style.display = "none";
+  };
+}
+
+/* ==========================================================
+                  НАСТРОЙКИ — ОТКРЫТИЕ ОКНА
+========================================================== */
+document.getElementById("settingsBtn")?.addEventListener("click", () => {
+  window.settings.open();
+});
+
+/* ==========================================================
+                     ИНИЦИАЛИЗАЦИЯ
+========================================================== */
+loadGames();
