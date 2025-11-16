@@ -1,27 +1,37 @@
+name: Build FreeDAB Launcher EXE
+
+on:
+  workflow_dispatch:      # запуск вручную
+  push:
+    branches:
+      - main              # автосборка при пуше в main
+
 jobs:
   build:
     runs-on: windows-latest
 
-    env:
-      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
     steps:
+      # 1. Checkout repo
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # 2. Install Node.js
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 18
 
+      # 3. Install dependencies
       - name: Install dependencies
         run: npm install
 
+      # 4. Build EXE via electron-builder
       - name: Build EXE (electron-builder)
         run: npm run dist
 
+      # 5. Upload EXE artifact
       - name: Upload built EXE
         uses: actions/upload-artifact@v4
         with:
-          name: FreeDAB-exe
+          name: FreeDAB-EXE
           path: dist/*.exe
