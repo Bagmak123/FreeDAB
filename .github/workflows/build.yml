@@ -2,21 +2,18 @@ name: Build Freetp Launcher EXE
 
 on:
   push:
-    branches:
-      - main
-  workflow_dispatch:
-  release:
-    types: [ published ]
+    branches: [ "main" ]
+  workflow_dispatch:   # позволяет запускать вручную
 
 jobs:
-  build-win:
-    runs-on: ubuntu-latest
+  build:
+    runs-on: windows-latest
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
 
-      - name: Use Node.js 18
+      - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: 18
@@ -24,19 +21,13 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Build Windows installer
-        run: npm run dist
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build EXE
+        run: |
+          npm install electron-builder --save-dev
+          npx electron-builder --win --x64
 
-      - name: Upload installer artifact
+      - name: Upload EXE artifact
         uses: actions/upload-artifact@v3
         with:
-          name: freetp-launcher-installer
+          name: FreeDAB-exe
           path: dist/*.exe
-
-      - name: Create GitHub Release when tagged
-        uses: softprops/action-gh-release@v1
-        if: startsWith(github.ref, 'refs/tags/')
-        with:
-          files: dist/*.exe
