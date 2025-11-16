@@ -2,7 +2,6 @@
   "name": "freedab-launcher",
   "version": "1.0.0",
   "description": "FreeDAB Game Launcher",
-  "author": "Bagmak123",
   "main": "main.js",
 
   "scripts": {
@@ -17,10 +16,7 @@
       "output": "dist"
     },
     "files": [
-      "**/*",
-      "!node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme}",
-      "!**/*.map",
-      "!**/*.md"
+      "**/*"
     ],
     "win": {
       "target": "nsis",
@@ -28,14 +24,12 @@
     },
     "nsis": {
       "oneClick": false,
-      "perMachine": false,
       "allowToChangeInstallationDirectory": true,
       "installerIcon": "build/icon.ico",
       "uninstallerIcon": "build/icon.ico"
     }
   },
 
-  "dependencies": {},
   "devDependencies": {
     "electron": "^29.0.0",
     "electron-builder": "^24.13.3"
