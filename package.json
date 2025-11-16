@@ -1,36 +1,30 @@
 {
   "name": "freedab-launcher",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "FreeDAB Game Launcher",
   "author": "Bagmak123",
   "license": "MIT",
   "main": "main.js",
-
   "scripts": {
     "start": "electron .",
     "dist": "electron-builder --win --x64",
     "release": "electron-builder --win --x64 --publish always"
   },
-
   "build": {
     "appId": "com.freedab.launcher",
     "productName": "FreeDAB Launcher",
-
     "directories": {
       "output": "dist"
     },
-
     "files": [
       "**/*",
       "!dist/**",
       "!win-unpacked/**"
     ],
-
     "win": {
       "target": "nsis",
       "icon": "build/icon.ico"
     },
-
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
@@ -41,7 +35,6 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true
     },
-
     "publish": [
       {
         "provider": "github",
@@ -50,11 +43,9 @@
       }
     ]
   },
-
   "dependencies": {
     "electron-updater": "^6.1.8"
   },
-
   "devDependencies": {
     "electron": "^29.0.0",
     "electron-builder": "^24.13.3"
