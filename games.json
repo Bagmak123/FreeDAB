@@ -1,29 +1,29 @@
 [
     {
-        "id": "cube-runner",
-        "title": "Cube Runner",
-        "description": "Мини-аркада: уклоняйся от препятствий и набирай очки.",
-        "genre": "Аркада",
+        "id": "peak-v1.44a",
+        "title": "Peak v1.44A",
+        "description": "PEAK — это кооперативная игра про выживание и восхождение, где каждый шаг может стать последним. Вы и ваши друзья — заблудившиеся скауты, которым нужно взобраться на вершину загадочной горы, чтобы выбраться с таинственного острова. Помогайте друг другу, прокладывайте путь, преодолевайте опасности четырёх биомов, следите за выносливостью и собирайте всё, что поможет выжить. Каждый день — новая карта, и только слаженной командой можно дойти до самой вершины.",
+        "genre": "Экшены, Приключенческие игры, Инди, Кооператив.",
         "platform": "Windows",
-        "url": "https://speed.hetzner.de/100MB.bin",
-        "thumb": "https://dummyimage.com/640x360/24263a/ffffff&text=Cube+Runner"
+        "url": "https://assetsio.gnwcdn.com/peak-1.jpg?width=1920&height=1920&fit=bounds&quality=70&format=jpg&auto=webp",
+        "thumb": "https://github.com/Bagmak123/freetp-games/releases/download/v1.4/PEAK-v.1.44.A-by-Pioneer.torrent"
     },
     {
-        "id": "space-shooter",
-        "title": "Space Shooter",
-        "description": "Классический 2D-шутер в космосе с волнами врагов.",
-        "genre": "Шутер",
+        "id": "mimesis-v0.2.5",
+        "title": "MIMESIS v0.2.5",
+        "description": "MIMESIS — это кооперативный хоррор на 4 игрока, где враг может быть кем угодно — даже твоим другом. Существо под названием Mimesis копирует голоса, движения и поведение игроков, заставляя сомневаться в каждом. Ваша цель — выжить и починить старый трамвай, собирая металлолом и избегая жутких тварей и погодных катастроф. Используйте микрофон, слушайте, кому можно доверять — и молитесь, чтобы рядом был человек, а не его копия.",
+        "genre": "Экшены, Приключенческие игры, Казуальные игры, Инди, Совместное Прохождение.",
         "platform": "Windows / Linux",
-        "url": "https://speed.hetzner.de/100MB.bin",
-        "thumb": "https://dummyimage.com/640x360/1d2833/ffffff&text=Space+Shooter"
+        "url": "https://i.ytimg.com/vi/ITuEaWLD7b4/maxresdefault.jpg",
+        "thumb": "https://github.com/Bagmak123/freetp-games/releases/download/v0.2.5/MIMESIS-v0.2.5-Portable.torrent"
     },
     {
-        "id": "puzzle-lines",
-        "title": "Neon Lines",
-        "description": "Логическая игра: соедини все точки, не отрывая линию.",
-        "genre": "Головоломка",
+        "id": "r.e.p.o-v0.3.1",
+        "title": "R.E.P.O v0.3.1",
+        "description": "R.E.P.O. — это кооперативный хоррор, в котором команда до 6 человек отправляется в жуткие заброшенные места, чтобы извлекать ценные предметы. Вам предстоит использовать физически реалистичный гравитационный захват, перетаскивая всё — от громоздких пианино до хрупкой керамики. Но будьте осторожны: монстры здесь тоже подчиняются законам физики, а шум может стать вашей ошибкой. За успешные миссии можно зарабатывать деньги и тратить их на улучшения и оружие, предоставленные загадочным ИИ, который явно заботится не только о вас.",
+        "genre": "Экшены, Кооператив.",
         "platform": "Windows",
-        "url": "https://speed.hetzner.de/100MB.bin",
-        "thumb": "https://dummyimage.com/640x360/222631/ffffff&text=Neon+Lines"
+        "url": "https://yandex-images.clstorage.net/9vl8K4F01/d3c6aeuQUg/5Af5eKU-cGXcnZl-Oe2NpvqPHZvIlETBDnCmtPnNBFWBTATocBKS_l2cT0ItBkkmVVg9uTn8ifzXqdEp3egVMKxf52P2Kil1hY7cZ2a50bCz3gvLmNw18CpFy4zT62BkvGoI5DxP1ZI1iTs4eF8qZlgANOdLp_CbrKypdL6jEzH8a5Qjgg92QtS_pj0x05zc5qobre-NMNk6VuC0zOxRc7xpPvBXavilLOA7PFF_CH91KgLyQ5_chLWgiHylmSgG-kqFAbUyeWP2g6EbNfmv3fedCrfEmSnCKGLfvMnBR0SPaAn2aHDauRPmGiJXawl4XB4123uo1baItax6kKI6BMdUohuxAnN626a7ERH_uPvOvj2nxIgH4yRN85D_8nhNl3An6UtTx7UQ6Cg-eEgnZHkmF_lynt-upZyHUYS7CSb9T5M_vhxDUvmgnD4AxI3Y5I0xiP6CEtgscuyU_-5OSL5iNvJ_TuucHu0rEmRdJXp7Lj3OZI3wrbOgu3eshgQF_2e5BYI6W0jVmJ8AMO6w2dq0HYrkuRP5AHf-kM7geFWDciTsa0zTrCvgEgtgQhxFXhwz_0Kn1Y2Bjptam6QpINhRtwSNPGhSxL6JOxj8qcLNnSKew4UYwjFGyorZ2EtKtlMz5GJY94gMzToAdlEgWEwZP9hynOy6vq64XZ2fCBLiS7k8jjxoUMuorxwc5bfw55chrd6eMs0dY9i5_tF7aLlcN8RUUsOCHvwwJ1pTGHVELDTTUqDqgauIkXuLqDg52XG-B4cdQVbwvJwbBMW_3vq0HrfIhTDoAmPwuMvuZHChXhjHV37OoCLYCSB-WTtEZzo46FWE4r22v6lykbUQMdFPshODJHlX0qSlEz3iuND0rTmszIgm-wNt3anYy19SuXwG0kVt2Lg5xR46V3sgbnk7Mc9Rv8yprpusT6CcHRvGSLgFgRJIX9euhAoi0J3ewo0Vr8WcCOkJbsOp8Mo",
+        "thumb": "https://github.com/Bagmak123/freetp-games/releases/download/v0.3.1/REPO-v0.3.1-by-Pioneer.torrent"
     }
 ]
