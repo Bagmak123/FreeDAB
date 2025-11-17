@@ -1,0 +1,1106 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <title>FreeDAB — лаунчер бесплатных игр</title>
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    :root {
+      --bg-main: radial-gradient(circle at top, #1f2937 0, #020617 60%);
+      --card-bg: radial-gradient(circle at top left, rgba(88,28,135,0.25), rgba(5,5,12,0.97));
+      --card-border: rgba(148,163,184,0.35);
+      --text-main: #f5f5f5;
+
+      --header-bg: rgba(5, 5, 10, 0.96);
+      --header-border: rgba(148, 163, 184, 0.25);
+
+      --button-grad: linear-gradient(135deg, #a855f7, #6366f1);
+      --button-text: #f9fafb;
+    }
+
+    body.theme-light {
+      --bg-main: radial-gradient(circle at top, #f3f4f6 0, #d1d5db 70%);
+      --card-bg: #ffffff;
+      --card-border: rgba(17,24,39,0.08);
+      --text-main: #111827;
+
+      --header-bg: rgba(243,244,246,0.98);
+      --header-border: rgba(17,24,39,0.08);
+
+      --button-grad: linear-gradient(135deg, #ffb454, #f97316);
+      --button-text: #111827;
+    }
+
+    body.theme-neon {
+      --bg-main: radial-gradient(circle at top, #020617 0, #000000 60%);
+      --card-bg: #020617;
+      --card-border: rgba(34,197,94,0.35);
+      --text-main: #ecfdf5;
+
+      --header-bg: rgba(15,23,42,0.96);
+      --header-border: rgba(34,197,94,0.35);
+
+      --button-grad: linear-gradient(135deg, #22c55e, #a3e635);
+      --button-text: #022c22;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg-main);
+      color: var(--text-main);
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 28px;
+      background: var(--header-bg);
+      border-bottom: 1px solid var(--header-border);
+      backdrop-filter: blur(10px);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .logo-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 10px;
+      background: var(--button-grad);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      font-size: 18px;
+      color: #111;
+    }
+
+    .logo-text {
+      font-size: 20px;
+      font-weight: 600;
+    }
+
+    .logo-sub {
+      font-size: 12px;
+      opacity: .7;
+    }
+
+    .search {
+      max-width: 320px;
+      flex: 1;
+      margin-left: 40px;
+    }
+
+    .search input {
+      width: 100%;
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.15);
+      background: rgba(15,15,25,0.9);
+      color: #f5f5f5;
+      outline: none;
+      transition: background .15s ease, border-color .15s ease, color .15s ease;
+    }
+
+    .search input::placeholder {
+      color: rgba(255,255,255,0.4);
+    }
+
+    body.theme-light .search input {
+      background: #e5e7eb;
+      border-color: rgba(17,24,39,0.18);
+      color: #111827;
+    }
+
+    body.theme-light .search input::placeholder {
+      color: rgba(55,65,81,0.7);
+    }
+
+    .tagline {
+      font-size: 12px;
+      opacity: .6;
+    }
+
+    main {
+      padding: 20px 28px 32px;
+    }
+
+    /* --- TABS --- */
+    .tabs {
+      display: inline-flex;
+      background: rgba(15,23,42,0.6);
+      border-radius: 999px;
+      padding: 3px;
+      margin-bottom: 18px;
+      gap: 3px;
+    }
+    body.theme-light .tabs {
+      background: rgba(229,231,235,0.9);
+    }
+    .tab-btn {
+      border: none;
+      border-radius: 999px;
+      padding: 6px 14px;
+      font-size: 13px;
+      cursor: pointer;
+      background: transparent;
+      color: rgba(249,250,251,0.7);
+    }
+    body.theme-light .tab-btn {
+      color: rgba(31,41,55,0.8);
+    }
+    .tab-btn.active {
+      background: var(--button-grad);
+      color: var(--button-text);
+      font-weight: 600;
+      box-shadow: 0 8px 18px rgba(0,0,0,0.35);
+    }
+
+    .tab-section {
+      display: none;
+    }
+    .tab-section.active {
+      display: block;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+      margin-top: 10px;
+    }
+
+    .section-header h2 {
+      margin: 0;
+      font-size: 20px;
+    }
+
+    .game-list {
+      display: grid;
+      gap: 18px;
+      grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+    }
+
+    .game-card {
+      background: var(--card-bg);
+      border-radius: 18px;
+      padding: 14px;
+      border: 1px solid var(--card-border);
+      box-shadow: 0 18px 40px rgba(0,0,0,0.75);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .game-card.game-card-completed {
+      border-color: #a855f7;
+      box-shadow: 0 0 0 1px rgba(168,85,247,0.7), 0 20px 45px rgba(0,0,0,0.9);
+    }
+
+    .game-tag {
+      position: absolute;
+      top: 10px;
+      right: 12px;
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: rgba(28, 187, 180, 0.9);
+      color: #02110f;
+      font-weight: 600;
+    }
+
+    .thumb {
+      height: 110px;
+      border-radius: 12px;
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      margin-bottom: 4px;
+    }
+
+    .game-title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+    }
+
+    .game-title {
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .game-title-row .gear-btn {
+      width: 24px;
+      height: 24px;
+      font-size: 13px;
+    }
+
+    .game-meta {
+      font-size: 11px;
+      opacity: .75;
+    }
+
+    .game-desc {
+      font-size: 13px;
+      opacity: .85;
+      margin-top: 4px;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .card-footer {
+      margin-top: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .card-footer-row {
+      display: flex;
+      align-items: center;
+      width: 100%;
+    }
+
+    .card-footer-row-top {
+      justify-content: center;
+    }
+
+    .card-footer-row-bottom {
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .card-footer-main {
+      flex: 1;
+    }
+
+    .button-primary {
+      border: none;
+      border-radius: 999px;
+      padding: 10px 16px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      background: var(--button-grad);
+      color: var(--button-text);
+      box-shadow: 0 6px 18px rgba(0,0,0,0.8);
+      transition: transform .1s ease, box-shadow .1s ease, filter .1s ease;
+      width: 100%;
+    }
+
+    .button-secondary {
+      border: none;
+      border-radius: 999px;
+      padding: 8px 18px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      background: #e5e7eb;
+      color: #111827;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.18);
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+
+    body.theme-dark .button-secondary {
+      background: rgba(148,163,184,0.16);
+      color: #f9fafb;
+    }
+
+    body.theme-neon .button-secondary {
+      background: rgba(34,197,94,0.16);
+      color: #bbf7d0;
+    }
+
+    .button-ghost {
+      border-radius: 999px;
+      padding: 5px 10px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      background: transparent;
+      border: 1px solid rgba(148,163,184,0.5);
+      color: #e5e7eb;
+      transition: background .15s ease, border-color .15s ease, color .15s ease;
+    }
+
+    .button-ghost:hover {
+      background: rgba(148,163,184,0.12);
+      border-color: rgba(168,85,247,0.8);
+      color: var(--button-text);
+    }
+
+    .button-primary[disabled] {
+      opacity: .6;
+      cursor: default;
+    }
+
+    .button-primary:hover:not([disabled]) {
+      transform: translateY(-1px);
+      box-shadow: 0 10px 24px rgba(0,0,0,0.7);
+      filter: brightness(1.05);
+    }
+
+    .footer-right {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .chip {
+      font-size: 11px;
+      padding: 3px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.15);
+      opacity: .8;
+    }
+
+    .gear-btn {
+      width: 26px;
+      height: 26px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.25);
+      background: rgba(9,9,15,0.9);
+      color: #f5f5f5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      cursor: default;
+      opacity: .35;
+      transition: background .15s ease, border-color .15s ease, color .15s ease, opacity .15s ease;
+    }
+
+    body.admin-on .gear-btn {
+      cursor: pointer;
+      opacity: .9;
+    }
+
+    body.theme-light .gear-btn {
+      background: #111827;
+      border-color: rgba(15,23,42,0.25);
+      color: #f9fafb;
+      opacity: .85;
+    }
+
+    body.theme-light #settingsBtn {
+      background: #111827;
+      border-color: rgba(31,41,55,0.9);
+      color: #f9fafb;
+    }
+
+    .download-status {
+      font-size: 11px;
+      opacity: .7;
+      margin-top: 2px;
+    }
+
+    .empty {
+      margin-top: 40px;
+      text-align: center;
+      opacity: .6;
+      font-size: 14px;
+    }
+
+    /* Кнопка + для библиотеки */
+    .library-add-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 999px;
+      border: none;
+      cursor: pointer;
+      background: var(--button-grad);
+      color: var(--button-text);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size: 20px;
+      box-shadow: 0 8px 18px rgba(0,0,0,0.5);
+    }
+
+    /* --- остальное (админка, консоль, настройки, обновления) --- */
+    #adminPanel {
+      position: fixed;
+      top: 80px;
+      right: 40px;
+      width: 380px;
+      max-height: 520px;
+      background: #0c0c13;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.12);
+      box-shadow: 0 18px 45px rgba(0,0,0,0.8);
+      padding: 0 16px 16px;
+      z-index: 9999;
+      display: none;
+      overflow: hidden;
+    }
+
+    #adminHeader {
+      cursor: move;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 4px 8px;
+      position: sticky;
+      top: 0;
+      background: #0c0c13;
+    }
+
+    #adminHeaderTitle {
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    .admin-header-buttons button {
+      width: 22px;
+      height: 22px;
+      border-radius: 999px;
+      border: none;
+      cursor: pointer;
+      background: rgba(255,255,255,0.12);
+      color: #f5f5f5;
+      font-size: 13px;
+      margin-left: 4px;
+    }
+
+    #adminPanel p {
+      margin: 0 0 10px 0;
+      font-size: 12px;
+      opacity: .7;
+    }
+
+    #adminPanel input {
+      width: 100%;
+      margin-bottom: 8px;
+      padding: 6px 8px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.2);
+      background: #10101a;
+      color: #f5f5f5;
+      font-size: 13px;
+    }
+
+    #adminPanel button#admSubmitBtn {
+      width: 100%;
+      padding: 8px 10px;
+      border-radius: 10px;
+      border: none;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      background: var(--button-grad);
+      color: var(--button-text);
+      margin-top: 4px;
+    }
+
+    #adminPanel .hint {
+      font-size: 11px;
+      opacity: .5;
+      margin-top: 6px;
+    }
+
+    #adminBubble {
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      width: 44px;
+      height: 44px;
+      border-radius: 999px;
+      background: radial-gradient(circle at top, #1dd1a1, #0984e3);
+      color: #050811;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      cursor: pointer;
+      box-shadow: 0 14px 30px rgba(0,0,0,0.7);
+      z-index: 9999;
+      user-select: none;
+    }
+
+    #updateWindow { /* как было */ 
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 360px;
+      padding: 20px;
+      background: #0f0f16;
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 16px;
+      box-shadow: 0 22px 45px rgba(0,0,0,0.7);
+      display: none;
+      z-index: 99999;
+      text-align: center;
+    }
+
+    #updateTitle { font-size:18px;font-weight:600;margin-bottom:10px;}
+    #updateText { opacity:.8;font-size:14px;margin-bottom:18px;}
+
+    #updateProgress {
+      width: 100%;
+      height: 6px;
+      background: rgba(255,255,255,0.15);
+      border-radius: 6px;
+      overflow: hidden;
+      margin: 10px 0 16px;
+    }
+
+    #updateBar {
+      height: 100%;
+      width: 0%;
+      background: var(--button-grad);
+      transition: width 0.25s linear;
+    }
+
+    #updateWindow.check-complete #updateBar {
+      background: linear-gradient(135deg, #1dd1a1, #2ecc71);
+    }
+
+    .update-buttons {display:flex;gap:10px;margin-top:8px;}
+    .update-btn {
+      flex: 1;
+      padding: 8px;
+      border-radius: 8px;
+      background: var(--button-grad);
+      border: none;
+      cursor: pointer;
+      font-weight: 600;
+      color: var(--button-text);
+    }
+    .update-cancel {background:rgba(255,255,255,0.15);color:#fff;}
+
+    #appVersion {
+      position: fixed;
+      bottom: 10px;
+      right: 18px;
+      font-size: 12px;
+      opacity: .35;
+      user-select: none;
+    }
+
+    #consoleOverlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.78);
+      backdrop-filter: blur(8px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100000;
+    }
+
+    #consoleInner {
+      width: 720px;
+      max-width: 96vw;
+      max-height: 80vh;
+      background: #050713;
+      border-radius: 16px;
+      border: 1px solid rgba(148,163,184,0.4);
+      box-shadow: 0 24px 60px rgba(0,0,0,0.9);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+
+    #consoleHeader {
+      padding: 8px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: linear-gradient(135deg, rgba(88,28,135,0.9), rgba(15,23,42,0.95));
+      border-bottom: 1px solid rgba(15,23,42,0.9);
+      font-size: 13px;
+    }
+
+    #consoleHeaderTitle {opacity:.9;}
+    #consoleCloseBtn {
+      border: none;
+      background: transparent;
+      color: #e5e7eb;
+      cursor: pointer;
+      font-size: 16px;
+      padding: 2px 6px;
+      border-radius: 999px;
+    }
+    #consoleCloseBtn:hover {background:rgba(15,23,42,0.9);}
+
+    #consoleOutput {
+      padding: 10px 12px;
+      font-size: 12px;
+      line-height: 1.4;
+      overflow-y: auto;
+      flex: 1;
+      background: radial-gradient(circle at top, #020617, #020617);
+    }
+
+    .console-line {margin-bottom:2px;white-space:pre-wrap;}
+    .console-line span.console-prefix {opacity:.5;margin-right:4px;}
+
+    #consoleInputRow {
+      display: flex;
+      align-items: center;
+      padding: 8px 10px;
+      border-top: 1px solid rgba(15,23,42,0.9);
+      background: #020617;
+      gap: 6px;
+    }
+
+    #consolePrompt {opacity:.5;font-size:12px;}
+    #consoleInput {
+      flex: 1;
+      background: #020617;
+      border-radius: 8px;
+      border: 1px solid rgba(148,163,184,0.4);
+      padding: 6px 8px;
+      color: #e5e7eb;
+      font-size: 12px;
+      outline: none;
+    }
+
+    #consoleInput:focus {
+      border-color: rgba(248,250,252,0.85);
+      box-shadow: 0 0 0 1px rgba(148,163,184,0.9);
+    }
+
+    #settingsBtn {
+      position: fixed;
+      bottom: 20px;
+      left: 20px;
+      width: 42px;
+      height: 42px;
+      background: rgba(15,23,42,0.9);
+      border-radius: 50%;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size: 20px;
+      cursor:pointer;
+      backdrop-filter: blur(6px);
+      z-index: 9999;
+      border: 1px solid rgba(148,163,184,0.6);
+      color: #f9fafb;
+    }
+
+    #settingsOverlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(10px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+
+    #settingsWindow {
+      width: 420px;
+      max-width: 92vw;
+      max-height: 80vh;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 18px;
+      padding: 18px 20px 20px;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.9);
+      overflow-y: auto;
+      color: var(--text-main);
+    }
+
+    .settings-header {
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      margin-bottom: 12px;
+    }
+
+    .settings-header h3 {margin:0;font-size:19px;}
+
+    .settings-close {
+      width: 28px;
+      height: 28px;
+      border-radius: 999px;
+      border: none;
+      cursor: pointer;
+      background: #ef4444;
+      color: #fee2e2;
+      font-size: 18px;
+      line-height: 1;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+
+    .settings-close:hover {background:#dc2626;}
+
+    .settings-section {
+      margin-bottom:18px;
+      padding:14px 0;
+      border-top: 1px solid rgba(15,23,42,0.35);
+    }
+    .settings-section:first-of-type {border-top:none;}
+
+    .settings-theme-row {
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      margin-top:8px;
+    }
+
+    #settingsWindow button {
+      margin-top:8px;
+      padding:8px 14px;
+      border-radius:999px;
+      border:none;
+      cursor:pointer;
+      font-weight:600;
+      background: var(--button-grad);
+      color: var(--button-text);
+    }
+
+    .theme-btn {
+      background: rgba(15,23,42,0.85);
+      color:#e5e7eb;
+      border-radius:999px;
+      padding:6px 12px;
+      font-size:12px;
+    }
+
+    body.theme-light .theme-btn {
+      background:#e5e7eb;
+      color:#111827;
+    }
+
+    body.theme-neon .theme-btn {
+      background:rgba(22,163,74,0.35);
+      color:#bbf7d0;
+    }
+
+    .theme-btn.active {
+      box-shadow: 0 0 0 2px rgba(255,255,255,0.7);
+      filter: brightness(1.05);
+    }
+
+    /* Модалка Библиотеки */
+    #libraryOverlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(8px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+
+    #libraryWindow {
+      width: 420px;
+      max-width: 92vw;
+      max-height: 80vh;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 18px;
+      padding: 18px 20px 20px;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.9);
+      overflow-y: auto;
+      color: var(--text-main);
+    }
+
+    #libraryWindow h3 {margin-top:0;margin-bottom:12px;}
+
+    .lib-row-label {
+      font-size: 13px;
+      opacity: .8;
+      margin-bottom: 4px;
+    }
+
+    #libTitle {
+      width: 100%;
+      padding: 8px;
+      border-radius: 8px;
+      border: 1px solid rgba(148,163,184,0.4);
+      background: #020617;
+      color: #e5e7eb;
+      margin-bottom: 10px;
+    }
+
+    body.theme-light #libTitle {
+      background:#f9fafb;
+      color:#111827;
+    }
+
+    .lib-path-row {
+      display:flex;
+      align-items:center;
+      gap:8px;
+      margin-bottom:10px;
+    }
+
+    .lib-path-text {
+      flex:1;
+      font-size: 12px;
+      opacity:.8;
+      word-break: break-all;
+    }
+
+    .lib-modal-buttons {
+      display:flex;
+      gap:8px;
+      margin-top:10px;
+      justify-content:flex-end;
+    }
+
+    .lib-modal-buttons button {
+      padding:8px 14px;
+      border-radius:999px;
+      border:none;
+      cursor:pointer;
+      font-weight:600;
+    }
+
+    .lib-save-btn {
+      background: var(--button-grad);
+      color: var(--button-text);
+    }
+
+    .lib-cancel-btn {
+      background: rgba(255,255,255,0.15);
+      color:#f9fafb;
+    }
+  </style>
+
+<style>
+.game-updated{
+  padding:4px 10px;
+  border-radius:6px;
+  margin-bottom:6px;
+  font-size:13px;
+  font-weight:500;
+  display:inline-block;
+  background:rgba(255,255,255,0.15);
+  color:#fff;
+}
+body.light .game-updated{
+  background:rgba(0,0,0,0.15);
+  color:#000;
+}
+</style>
+</head>
+        
+<body class="theme-dark">
+  <div id="updateWindow">
+    <div id="updateTitle">Проверка обновлений…</div>
+    <div id="updateText">Подождите немного</div>
+    <div id="updateProgress">
+      <div id="updateBar"></div>
+    </div>
+    <div class="update-buttons">
+      <button class="update-btn" id="updateNow" style="display:none;">Обновить</button>
+      <button class="update-btn update-cancel" id="updateCancel">Закрыть</button>
+    </div>
+  </div>
+
+  <header>
+    <div class="logo">
+      <div class="logo-icon">D</div>
+      <div>
+        <div class="logo-text">FreeDAB Launcher</div>
+        <div class="logo-sub">бесплатные игры • встроенное скачивание • автообновление</div>
+      </div>
+    </div>
+    <div class="search">
+      <input id="searchInput" type="text" placeholder="Поиск по играм..." />
+    </div>
+    <div class="tagline">alpha 0.4</div>
+  </header>
+
+  <main>
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="catalog">Каталог игр</button>
+      <button class="tab-btn" data-tab="library">Библиотека</button>
+    </div>
+
+    <!-- Каталог -->
+    <section id="catalogSection" class="tab-section active">
+      <div class="section-header">
+        <h2>Каталог игр</h2>
+        <div class="chip" id="gamesCountChip">0 игр</div>
+      </div>
+      <div class="game-list" id="gameList"></div>
+      <div class="empty" id="emptyState" style="display:none;">
+        Ничего не найдено. Попробуй изменить запрос поиска.
+      </div>
+    </section>
+
+    <!-- Библиотека -->
+    <section id="librarySection" class="tab-section">
+      <div class="section-header">
+        <h2>Библиотека</h2>
+        <button id="addLibraryGameBtn" class="library-add-btn" title="Добавить игру">+</button>
+      </div>
+      <div class="game-list" id="libraryList"></div>
+      <div class="empty" id="libraryEmpty" style="display:none;">
+        В библиотеки пока нет игр. Нажмите «+», чтобы добавить свою.
+      </div>
+    </section>
+  </main>
+
+  <!-- Консоль -->
+  <div id="consoleOverlay">
+    <div id="consoleInner">
+      <div id="consoleHeader">
+        <span id="consoleHeaderTitle">Консоль FreeDAB</span>
+        <button id="consoleCloseBtn">×</button>
+      </div>
+      <div id="consoleOutput"></div>
+      <div id="consoleInputRow">
+        <span id="consolePrompt">&gt;</span>
+        <input id="consoleInput" placeholder="help — список команд, admin on/off — управление админкой" />
+      </div>
+    </div>
+  </div>
+
+  <!-- Модалка описания -->
+  <div id="descModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.78); backdrop-filter:blur(8px); z-index:99998; align-items:center; justify-content:center;">
+    <div id="descModalInner" style="max-width:520px; width:90%; max-height:70vh; background:#050713; border-radius:16px; border:1px solid rgba(148,163,184,0.45); box-shadow:0 24px 60px rgba(0,0,0,0.9); padding:18px 20px; display:flex; flex-direction:column;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <div id="descModalTitle" style="font-weight:600;font-size:15px;"></div>
+        <button id="descModalClose" style="border:none;background:transparent;color:#e5e7eb;font-size:18px;cursor:pointer;border-radius:999px;padding:2px 6px;">×</button>
+      </div>
+      <div id="descModalText" style="font-size:13px;line-height:1.5;opacity:0.9;overflow-y:auto;"></div>
+    </div>
+  </div>
+
+  <!-- Админка -->
+  <div id="adminPanel">
+    <div id="adminHeader">
+      <div id="adminHeaderTitle">Админ-панель</div>
+      <div class="admin-header-buttons">
+        <button id="adminMinimizeBtn">–</button>
+      </div>
+    </div>
+    <p>Добавляй и редактируй свои игры. Открывается по секретной фразе.</p>
+    <input id="admTitle" placeholder="Название игры" />
+    <input id="admDesc" placeholder="Описание" />
+    <input id="admGenre" placeholder="Жанр (аркада, шутер...)" />
+    <input id="admThumb" placeholder="URL картинки (миниатюра)" />
+    <input id="admURL" placeholder="Прямая ссылка на файл игры (zip/exe/...)" />
+    <button id="admSubmitBtn">Добавить игру</button>
+    <button id="admDeleteBtn" style="
+      width: 100%;
+      padding: 8px 10px;
+      border-radius: 10px;
+      border: none;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      background: linear-gradient(135deg, #ff6b6b, #c0392b);
+      color: white;
+      margin-top: 8px;
+      display: none;
+    ">Удалить игру</button>
+    <button id="admPublishUpdateBtn" style="
+      width: 100%;
+      padding: 8px 10px;
+      border-radius: 10px;
+      border: none;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      background: linear-gradient(135deg, #4f46e5, #7c3aed);
+      color: white;
+      margin-top: 8px;
+    ">Обновить приложение (GitHub)</button>
+
+    <p class="hint">Секретная фраза: набери в лаунчере <b>/dabbyadmin1988pasha</b></p>
+  </div>
+
+  <div id="adminBubble">⚙</div>
+  <div id="appVersion">v 0.0.0</div>
+  <div id="settingsBtn" title="Настройки">⚙</div>
+
+  <!-- Модалка настроек -->
+  <div id="settingsOverlay">
+    <div id="settingsWindow">
+      <div class="settings-header">
+        <h3>Настройки</h3>
+        <button id="closeSettings" class="settings-close">✕</button>
+      </div>
+
+      <div class="settings-section">
+        <h4>Тема оформления</h4>
+        <div class="settings-theme-row">
+          <button class="theme-btn" data-theme="light">Светлая</button>
+          <button class="theme-btn" data-theme="dark">Стандартная</button>
+          <button class="theme-btn" data-theme="neon">TOXIC</button>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <h4>Папка загрузки игр</h4>
+        <div id="downloadPath"></div>
+        <button id="changeDownloadPath">Выбрать папку…</button>
+      </div>
+
+      <div class="settings-section">
+        <h4>Обновление лаунчера</h4>
+        <div id="updateStatus">Нажмите «Проверить обновления»</div>
+        <button id="checkUpdateBtn">Проверить обновления</button>
+        <button id="applyUpdateBtn" style="display:none;">Обновить сейчас</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Модалка добавления игры в библиотеку -->
+  <div id="libraryOverlay">
+    <div id="libraryWindow">
+      <h3>Добавить игру в библиотеку</h3>
+
+      <div class="lib-row">
+        <div class="lib-row-label">Название игры</div>
+        <input id="libTitle" type="text" placeholder="Например: Моя любимая игра" />
+      </div>
+
+      <div class="lib-row">
+        <div class="lib-row-label">EXE-файл игры</div>
+        <div class="lib-path-row">
+          <div id="libExePath" class="lib-path-text" data-path="">Не выбрано</div>
+          <button id="libChooseExe" class="button-ghost">Выбрать…</button>
+        </div>
+      </div>
+
+      <div class="lib-row">
+        <div class="lib-row-label">Картинка (по желанию)</div>
+        <div class="lib-path-row">
+          <div id="libImagePath" class="lib-path-text" data-path="">Не выбрано</div>
+          <button id="libChooseImage" class="button-ghost">Выбрать…</button>
+        </div>
+      </div>
+
+      <div class="lib-modal-buttons">
+        <button id="libCancel" class="lib-cancel-btn">Отмена</button>
+        <button id="libSave" class="lib-save-btn">Сохранить</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>
