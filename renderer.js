@@ -665,7 +665,24 @@ function startDownload(game) {
   };
   render(games);
 
-  window.downloader.downloadGame({
+  window.downloader.onProgress((data) => {
+  if (!downloadState[data.gameId]) downloadState[data.gameId] = {};
+
+  const st = downloadState[data.gameId];
+  st.status = "downloading";
+
+  // GitHub иногда НЕ передаёт размер → percent = NaN
+  if (typeof data.percent === "number" && !isNaN(data.percent)) {
+    st.percent = Math.round(data.percent);
+  } else {
+    // Без known size
+    st.percent = 0;
+  }
+
+  st.speed = data.speed || 0;
+  render(games);
+});
+
     url: game.url,
     fileName: safeName,
     gameId: game.id
