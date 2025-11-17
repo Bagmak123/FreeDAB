@@ -623,6 +623,37 @@ function startDownload(game) {
     return;
   }
 
+  // --- ИСПРАВЛЕНО: берём настоящее имя файла из URL ---
+  let realName = game.url.split("/").pop();
+  if (!realName) realName = (game.title || "game") + ".dat";
+
+  // Убираем параметры ?token=... если есть
+  realName = realName.split("?")[0];
+
+  downloadState[game.id] = {
+    status: "downloading",
+    percent: 0,
+    speed: 0
+  };
+  render(games);
+
+  window.downloader.downloadGame({
+    url: game.url,
+    fileName: realName,
+    gameId: game.id
+  });
+}
+
+  if (!window.downloader) {
+    alert("Скачивание отключено: нет связи с main-процессом.");
+    return;
+  }
+
+  if (!game.url) {
+    alert("Для этой игры не указана ссылка на файл.");
+    return;
+  }
+
   const safeName = (
     (game.title || "game").replace(/[^a-z0-9_-]/gi, "_") + ".bin"
   ).slice(0, 60);
